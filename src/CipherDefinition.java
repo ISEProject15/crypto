@@ -1,4 +1,4 @@
 public interface CipherDefinition {
-    public Cipher create();
+    public Cipher create(CipherRequest request);
     public String identity();
 }
