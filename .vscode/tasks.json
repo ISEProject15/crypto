@@ -6,7 +6,8 @@
         {
             "label": "build",
             "type": "shell",
-            "command": "javac -d ${config:java.project.outputPath} ${config:java.project.sourcePaths}/*.java"
+            "command": "javac -d ${config:java.project.outputPath} ${config:java.project.sourcePaths}/*.java",
+            "problemMatcher": []
         },
         {
             "label": "run",

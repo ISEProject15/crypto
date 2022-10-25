@@ -1,41 +1,40 @@
 public class App {
     public static void main(String[] args) throws Exception {
-        final Task<Integer> first = () -> {
-            System.out.println("first");
-            return Integer.valueOf(0);
-        };
-        final Task<Integer> second = first.then((i) -> {
-            System.out.println("second:" + i.toString());
-            return Integer.valueOf(1);
-        });
+        final var senderloop = new SenderLoop();
+        final var receiverLoop = new ReceiverLoop();
+        final var wiretapperLoop = new WiretapperLoop();
 
-        Integer result = null;
-        do {
-            result = second.poll();
-        } while (result == null);
-        System.out.println("end:" + result.toString());
+        senderloop.start();
+        receiverLoop.start();
+        wiretapperLoop.start();
     }
 }
 
-class Runtime implements AsyncRuntime {
-    static class Worker extends Thread {
-
-    }
-
-    java.util.concurrent.PriorityBlockingQueue<Task<?>> tasks = new java.util.concurrent.PriorityBlockingQueue<Task<?>>();
-
+class SenderLoop extends Thread {
     @Override
-    public void dispatch(Task<?> task) {
-        this.tasks.add(task);
+    public void run() {
+        // wait receiver hello
+        // send sender hello
+        // wait cipher protocol suggestion
+        // send cipher protocol prelude
+        // receive data
     }
+}
 
+class ReceiverLoop extends Thread {
     @Override
-    public void start() {
-
+    public void run() {
+        // Send receiver hello(contains cipher spec)
+        // wait sender hello
+        // send cipher protocol suggestion
+        // wait cipher protocol prelude
+        // send data
     }
+}
 
+class WiretapperLoop extends Thread {
     @Override
-    public void stop() {
+    public void run() {
 
     }
 }
