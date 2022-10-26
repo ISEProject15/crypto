@@ -1,6 +1,7 @@
 public interface Cipher {
-    public String spec();
-    public Encrypter encrypter();
-    public Decrypter decrypter();
-}
+    public String identity();
 
+    public Transformer encrypter();
+
+    public Transformer decrypter();
+}
