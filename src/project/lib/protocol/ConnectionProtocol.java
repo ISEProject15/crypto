@@ -1,4 +1,4 @@
-package project.protocol;
+package project.lib.protocol;
 
 public interface ConnectionProtocol {
 

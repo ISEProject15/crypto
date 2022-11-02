@@ -1,4 +1,4 @@
-package project.crypto;
+package project.lib;
 
 public interface Transformer {
     // sourceに渡されたブロックの変換を行い，destinationに書き込む．
