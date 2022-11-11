@@ -3,6 +3,8 @@
 ## 目標
 通信モデルを作って暗号の安全性の検証をする．
 
+## javaバージョン
+Java17 - OpenJDK 17
 
 # ドキュメント
 
@@ -45,29 +47,27 @@ sourceからlengthバイトを送信する．lengthが負のときは最後の�
 
 ### project.lib.protocol.MetaMessage
 ```ebnf
-MetaMessage ::= Id, "@", MessageBody, "\0";
-         Id ::= "[_a-zA-Z]+";
-    RuleSet ::= ;
+MetaMessage ::= Id, "@", (RuleSet | Value), "\n";
+         Id ::= "[_a-zA-Z]?[_a-zA-Z0-9]*";
+    RuleSet ::= (Rule | RecRule), ('&', (Rule | RecRule))*;
     RecRule ::= Id, ':', RuleSet, ';';
        Rule ::= Id, '=', Value;
       Value ::= Atom | Atom, (',', Atom)*, [','];
-      Atom ::= '"', Value, '"' | "'", Value, "'" | ".*";
-       
+       Atom ::=  "[^,;]*";
 ```
-サンプル: `key0:key01=v01&key02:key001=v001&key002=""aa"a"";;&key1=v1`
+サンプル: `key0:key01:key001=v001&key002=esc"ape;&key02=v01,v02;&key1=v1\n`
 これが表すデータは
-```json
-{ 
-    "key0": { 
-        "key01":"v01",
-        "key02": { 
-            "key001": "v001",
-            "key002": "aa\"a",
-        },
-    }
-    "key1": "v1", 
-}
+```yaml
+key0:  
+  key01: 
+    key001: v001
+    key002: esc"ape
+  key02: ["v01", "v02"]
+key1: v1
 ```
-
+制御文字等はエスケープする．
+`'\', ('d' | 'x'), number, 'n'`
+ex) \d0000n or \d000n
+dが先頭なら10進数解釈，xが先頭なら16進数解釈
 ## project.test
 エントリポイントなど実行にかかわるものを入れるパッケージ
