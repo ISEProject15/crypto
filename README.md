@@ -52,10 +52,10 @@ MetaMessage ::= Id, "@", (RuleSet | Value), "\n";
     RuleSet ::= (Rule | RecRule), ('&', (Rule | RecRule))*;
     RecRule ::= Id, ':', RuleSet, ';';
        Rule ::= Id, '=', Value;
-      Value ::= Atom | Atom, (',', Atom)*, [','];
+      Value ::= Atom;
        Atom ::=  "[^,;]*";
 ```
-サンプル: `key0:key01:key001=v001&key002=esc"ape;&key02=v01,v02;&key1=v1\n`
+サンプル: `key0:key01:key001=v001&key002=esc"ape;&key02-v01&v02;;&key1=v1\n`
 これが表すデータは
 ```yaml
 key0:  
@@ -65,6 +65,9 @@ key0:
   key02: ["v01", "v02"]
 key1: v1
 ```
+> 配列表現は変更するかも．
+> この形式だとオブジェクトを配列内に持てない
+> 
 制御文字等はエスケープする．
 `'\', ('d' | 'x'), number, 'n'`
 ex) \d0000n or \d000n

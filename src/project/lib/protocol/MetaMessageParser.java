@@ -1,5 +1,5 @@
 package project.lib.protocol;
 
-public class MetaMessageParser {
-    // parser
+public interface MetaMessageParser {
+    public MetaMessage parse(CharSequence sequence);
 }
