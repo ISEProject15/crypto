@@ -145,7 +145,7 @@ final class AtomRule extends Rule {
     }
 }
 
-class Mapping implements MetaMessage.Body.Mapping {
+class Mapping extends MetaMessage.Body.Mapping {
     public static class Builder {
         private final HashMap<String, Body> map;
 
@@ -210,7 +210,7 @@ class Mapping implements MetaMessage.Body.Mapping {
     }
 }
 
-class Atom implements MetaMessage.Body.Atom {
+class Atom extends MetaMessage.Body.Atom {
     public static project.lib.protocol.Atom of(String text) {
         return new project.lib.protocol.Atom(text);
     }
