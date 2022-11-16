@@ -22,6 +22,14 @@ public class App {
         receiverLoop.start();
         wiretapperLoop.start();
     }
+
+    private static String jsonify(Body body) {
+        return body.match((atom) -> {
+            return atom.toString();
+        }, (mapping) -> {
+            
+        });
+    }
 }
 
 class SenderLoop extends Thread {
