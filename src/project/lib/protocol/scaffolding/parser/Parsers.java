@@ -12,7 +12,7 @@ public abstract class Parsers {
 
             return new Parsed<String>(
                     matcher.group(),
-                    input.subSequence(matcher.end(), input.length()));
+                    input.subSequence(matcher.end()));
         };
     }
 

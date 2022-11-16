@@ -5,6 +5,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
+import project.lib.protocol.scaffolding.*;
 import project.lib.protocol.scaffolding.collections.HList;
 
 // parser of T. this class MUST NOT have state.
@@ -14,7 +15,7 @@ public interface Parser<T> {
         return parser;
     }
 
-    public Parsed<T> parse(CharSequence sequence);
+    public Parsed<T> parse(Source sequence);
 
     public default <U> Parser<U> map(Function<T, U> map) {
         return (input) -> {
@@ -74,7 +75,7 @@ public interface Parser<T> {
         };
     }
 
-    // create a parser represents syntax of (this, (separator, this)*)
+    // create a parser represents syntax of (this, (separator, this)*, [separator])
     public default Parser<Stream<T>> separated(Parser<?> separator) {
         return (input) -> {
             final var list = new ArrayList<T>();
@@ -102,10 +103,49 @@ public interface Parser<T> {
         };
     }
 
-    public default Parser<T> inspect(Consumer<Parsed<T>> action) {
+    // create a parser represents syntax of (this, (separator, this)*)
+    public default Parser<Stream<T>> separatedExact(Parser<?> separator) {
+        return (input) -> {
+            final var list = new ArrayList<T>();
+            final var first = this.parse(input);
+            if (first == null) {
+                return new Parsed<Stream<T>>(list.stream(), input);
+            }
+            input = first.rest;
+
+            while (true) {
+                Log.global.log("repeat rest:" + input.toString());
+                final var sep = separator.parse(input);
+                if (sep == null) {
+                    break;
+                }
+
+                final var result = this.parse(sep.rest);
+                if (result == null)
+                    return null;
+
+                list.add(result.value);
+                input = result.rest;
+            }
+
+            Log.global.log("repeat: " + list.size());
+
+            return new Parsed<Stream<T>>(list.stream(), input);
+        };
+    }
+
+    public default Parser<T> after(Consumer<Parsed<T>> action) {
         return (input) -> {
             final var result = this.parse(input);
             action.accept(result);
+            return result;
+        };
+    }
+
+    public default Parser<T> before(Consumer<Source> action) {
+        return (input) -> {
+            action.accept(input);
+            final var result = this.parse(input);
             return result;
         };
     }
