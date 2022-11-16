@@ -5,7 +5,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import project.lib.protocol.scaffolding.*;
 import project.lib.protocol.scaffolding.collections.HList;
 
 // parser of T. this class MUST NOT have state.
@@ -83,6 +82,7 @@ public interface Parser<T> {
             if (first == null) {
                 return new Parsed<Stream<T>>(list.stream(), input);
             }
+            list.add(first.value);
             input = first.rest;
 
             while (true) {
@@ -109,12 +109,11 @@ public interface Parser<T> {
             final var list = new ArrayList<T>();
             final var first = this.parse(input);
             if (first == null) {
-                return new Parsed<Stream<T>>(list.stream(), input);
+                return null;
             }
+            list.add(first.value);
             input = first.rest;
-
             while (true) {
-                Log.global.log("repeat rest:" + input.toString());
                 final var sep = separator.parse(input);
                 if (sep == null) {
                     break;
@@ -123,13 +122,9 @@ public interface Parser<T> {
                 final var result = this.parse(sep.rest);
                 if (result == null)
                     return null;
-
                 list.add(result.value);
                 input = result.rest;
             }
-
-            Log.global.log("repeat: " + list.size());
-
             return new Parsed<Stream<T>>(list.stream(), input);
         };
     }

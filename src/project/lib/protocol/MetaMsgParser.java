@@ -1,6 +1,5 @@
 package project.lib.protocol;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.stream.Stream;
 
@@ -10,43 +9,20 @@ import project.lib.protocol.scaffolding.parser.Parsed;
 import project.lib.protocol.scaffolding.parser.Parser;
 import project.lib.protocol.scaffolding.parser.Parsers;
 import project.lib.protocol.scaffolding.parser.Source;
-import java.util.function.Consumer;
-import project.lib.protocol.scaffolding.*;
 
 public class MetaMsgParser implements MetaMessageParser {
-    private static Consumer<Source> ent(String name) {
-        return (x) -> {
-            Log.global.log(x.offsetTotal() + "->" + name).indent(1);
-        };
-    }
-
-    private static <T> Consumer<T> dein() {
-        return (x) -> Log.global.indent(-1);
-    };
-
     private static final Parser<Atom> atom = Parsers.regex("[^;&]+").map(Atom::of);
-    private static final Parser<String> id = Parsers.regex("[_a-zA-Z][_a-zA-Z0-9]*").after(x -> {
-        if (x != null) {
-            Log.global.log("id:" + x.value + "[" + x.rest.offsetTotal() + "]");
-        }
-    });
+    private static final Parser<String> id = Parsers.regex("[_a-zA-Z][_a-zA-Z0-9]*");
     private static final Parser<String> at = Parsers.regex("@");
     private static final Parser<String> colon = Parsers.regex(":");
     private static final Parser<String> semicolon = Parsers.regex(";");
     private static final Parser<String> equal = Parsers.regex("=");
-    private static final Parser<String> ampasand = Parsers.regex("&").before((x) -> {
-        Log.global.log("&:" + x.toString());
-    });
-    private static final Parser<AtomRule> atomRule = id.join(equal).join(atom).map(AtomRule::of)
-            .before(ent("atomRule")).after(dein());
-    private static final Parser<RuleSet> ruleSet = createRuleSet().before(ent("ruleSet"));
-    private static final Parser<Mapping> mapping = ruleSet
-            .before(ent("mapping")).map(Mapping::of).after(dein());
-    private static final Parser<RecRule> recRule = id.join(colon).join(ruleSet)
-            .before(ent("recRule")).after(dein())
-            .join(semicolon).map(RecRule::of);
-    private static final Parser<Body> body = mapping.map(x -> (Body) x).or(atom.map(x -> (Body) x)).before(ent("body"))
-            .after(dein());
+    private static final Parser<String> ampasand = Parsers.regex("&");
+    private static final Parser<AtomRule> atomRule = id.join(equal).join(atom).map(AtomRule::of);
+    private static final Parser<RuleSet> ruleSet = createRuleSet();
+    private static final Parser<Mapping> mapping = ruleSet.map(Mapping::of);
+    private static final Parser<RecRule> recRule = id.join(colon).join(ruleSet).join(semicolon).map(RecRule::of);
+    private static final Parser<Body> body = mapping.map(x -> (Body) x).or(atom.map(x -> (Body) x));
     private static final Parser<MetaMessage> metaMessage = id.join(at).join(body).map(MetaMsgParser::createMetaMessage);
 
     private static Parser<RuleSet> createRuleSet() {
@@ -190,7 +166,6 @@ class Mapping implements MetaMessage.Body.Mapping {
     public static project.lib.protocol.Mapping of(RuleSet ruleSet) {
         final var builder = builder();
         for (final var rule : ruleSet.rules) {
-            System.out.println(rule.getClass());
             if (rule.getClass() == RecRule.class) {
                 final var r = (RecRule) rule;
                 builder.add(r.id, project.lib.protocol.Mapping.of(r.ruleSet));
