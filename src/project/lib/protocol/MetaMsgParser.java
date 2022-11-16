@@ -28,7 +28,7 @@ public class MetaMsgParser implements MetaMessageParser {
     private static Parser<RuleSet> createRuleSet() {
         final Parser<RecRule> recRule = MetaMsgParser::recRuleFn;
         final var atomOrRec = atomRule.map(x -> (Rule) x).or(recRule.map(x -> (Rule) x));
-        final var separated = atomOrRec.separatedExact(ampasand);
+        final var separated = atomOrRec.separatedExact(ampasand, 1, 0);
         return separated.map(RuleSet::of);
     }
 
@@ -190,6 +190,11 @@ class Mapping extends MetaMessage.Body.Mapping {
     @Override
     public Body get(String key) {
         return map.get(key);
+    }
+
+    @Override
+    public java.util.Set<java.util.Map.Entry<String, Body>> entries() {
+        return this.map.entrySet();
     }
 
     @Override

@@ -74,8 +74,10 @@ public interface Parser<T> {
         };
     }
 
-    // create a parser represents syntax of (this, (separator, this)*, [separator])
-    public default Parser<Stream<T>> separated(Parser<?> separator) {
+    // create a parser represents syntax of [this, (separator, this)*, [separator]]
+    // if lower less than or equal to 0, lower is ignored.
+    // if upper less than or equal to 0, upper is ignored.
+    public default Parser<Stream<T>> separated(Parser<?> separator, int lower, int upper) {
         return (input) -> {
             final var list = new ArrayList<T>();
             final var first = this.parse(input);
@@ -99,12 +101,20 @@ public interface Parser<T> {
                 list.add(result.value);
                 input = result.rest;
             }
+            if (lower > 0 && list.size() < lower) {
+                return null;
+            }
+            if (upper > 0 && list.size() > upper) {
+                return null;
+            }
             return new Parsed<Stream<T>>(list.stream(), input);
         };
     }
 
     // create a parser represents syntax of (this, (separator, this)*)
-    public default Parser<Stream<T>> separatedExact(Parser<?> separator) {
+    // if lower less than or equal to 0, lower is ignored.
+    // if upper less than or equal to 0, upper is ignored.
+    public default Parser<Stream<T>> separatedExact(Parser<?> separator, int lower, int upper) {
         return (input) -> {
             final var list = new ArrayList<T>();
             final var first = this.parse(input);
@@ -118,12 +128,18 @@ public interface Parser<T> {
                 if (sep == null) {
                     break;
                 }
-
                 final var result = this.parse(sep.rest);
-                if (result == null)
+                if (result == null) {
                     return null;
+                }
                 list.add(result.value);
                 input = result.rest;
+            }
+            if (lower > 0 && list.size() < lower) {
+                return null;
+            }
+            if (upper > 0 && list.size() > upper) {
+                return null;
             }
             return new Parsed<Stream<T>>(list.stream(), input);
         };

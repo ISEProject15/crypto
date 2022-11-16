@@ -1,5 +1,6 @@
 package project.lib.protocol;
 
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 
@@ -38,7 +39,7 @@ public interface MetaMessage {
 
             public abstract Body get(String key);
 
-            public abstract Set<String> keys();
+            public abstract Set<Map.Entry<String, Body>> entries();
         }
 
         // an interface represents text

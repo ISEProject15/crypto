@@ -7,11 +7,7 @@ public class App {
         final var parser = new project.lib.protocol.MetaMsgParser();
         final var msg = parser.parse("id@key0:key01:key001=v001&key002=v002;&key02=v02;&key1=v1");
         System.out.println(msg.toString());
-        final var str = msg.body().match((atom) -> {
-            return atom.toString();
-        }, (mapping) -> {
-            return mapping.toString();
-        });
+        final var str = jsonify(msg.body());
         System.out.println(str);
 
         final var senderloop = new SenderLoop();
@@ -27,7 +23,20 @@ public class App {
         return body.match((atom) -> {
             return atom.toString();
         }, (mapping) -> {
-            
+            final var builder = new java.lang.StringBuilder();
+            builder.append("{");
+            var isFirst = true;
+            for (final var entry : mapping.entries()) {
+                if (!isFirst) {
+                    builder.append(",");
+                }
+                isFirst = false;
+                final var key = entry.getKey();
+                final var value = entry.getValue();
+                builder.append(key).append(":").append(jsonify(value));
+            }
+
+            return builder.append("}").toString();
         });
     }
 }
