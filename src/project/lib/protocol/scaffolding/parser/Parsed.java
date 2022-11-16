@@ -14,4 +14,9 @@ public class Parsed<T> {
     public <U> Parsed<U> map(Function<T, U> map) {
         return new Parsed<U>(map.apply(this.value), this.rest);
     }
+
+    @Override
+    public String toString() {
+        return "(" + this.value.toString() + "," + this.rest.toString() + ")";
+    }
 }

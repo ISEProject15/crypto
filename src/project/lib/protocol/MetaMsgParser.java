@@ -17,7 +17,8 @@ public class MetaMsgParser implements MetaMessageParser {
     private static final Parser<String> semicolon = Parsers.regex(";");
     private static final Parser<String> equal = Parsers.regex("=");
     private static final Parser<String> ampasand = Parsers.regex("&");
-    private static final Parser<AtomRule> atomRule = id.join(equal).join(atom).map(AtomRule::of);
+    private static final Parser<AtomRule> atomRule = id.join(equal).join(atom).map(AtomRule::of)
+            .inspect(x -> System.out.println("atomRule:" + x.toString()));;
     private static final Parser<RuleSet> ruleSet = createRuleSet();
     private static final Parser<Mapping> mapping = ruleSet.map(Mapping::of);
     private static final Parser<RecRule> recRule = id.join(colon).join(ruleSet)
@@ -49,12 +50,19 @@ public class MetaMsgParser implements MetaMessageParser {
             private final MetaMessage.Body _body;
             private final String _id;
 
+            @Override
             public MetaMessage.Body body() {
                 return this._body;
             }
 
+            @Override
             public String identity() {
                 return this._id;
+            }
+
+            @Override
+            public String toString() {
+                return this.identity() + "@" + this.body().toString();
             }
         };
     }
@@ -71,7 +79,7 @@ public class MetaMsgParser implements MetaMessageParser {
 
 class RuleSet {
     public static RuleSet of(Stream<Rule> rules) {
-        return new RuleSet((Rule[]) rules.toArray());
+        return new RuleSet(rules.toArray(Rule[]::new));
     }
 
     public final Rule[] rules;
@@ -165,6 +173,23 @@ class Mapping implements MetaMessage.Body.Mapping {
     public Body get(String key) {
         return map.get(key);
     }
+
+    @Override
+    public String toString() {
+        final var builder = new java.lang.StringBuilder();
+        for (final var entry : this.map.entrySet()) {
+            final var key = entry.getKey();
+            final var val = entry.getValue();
+            final var vstr = val.toString();
+
+            if (val instanceof MetaMessage.Body.Atom) {
+                builder.append(key + "=" + vstr);
+            } else {
+                builder.append(key + ":" + vstr);
+            }
+        }
+        return builder.toString();
+    }
 }
 
 class Atom implements MetaMessage.Body.Atom {
@@ -180,6 +205,11 @@ class Atom implements MetaMessage.Body.Atom {
 
     @Override
     public String text() {
+        return this.text;
+    }
+
+    @Override
+    public String toString() {
         return this.text;
     }
 }

@@ -6,8 +6,9 @@ public abstract class Parsers {
     public static Parser<String> regex(Pattern pattern) {
         return (input) -> {
             final var matcher = pattern.matcher(input);
-            if (!matcher.lookingAt())
+            if (!matcher.lookingAt()) {
                 return null;
+            }
 
             return new Parsed<String>(
                     matcher.group(),

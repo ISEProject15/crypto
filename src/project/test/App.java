@@ -2,6 +2,10 @@ package project.test;
 
 public class App {
     public static void main(String[] args) throws Exception {
+        final var parser = new project.lib.protocol.MetaMsgParser();
+        final var msg = parser.parse("id@key0:key01:key001=v001&key002=v002;&key02=v02;&key1=v1");
+        System.out.print(msg.toString());
+
         final var senderloop = new SenderLoop();
         final var receiverLoop = new ReceiverLoop();
         final var wiretapperLoop = new WiretapperLoop();

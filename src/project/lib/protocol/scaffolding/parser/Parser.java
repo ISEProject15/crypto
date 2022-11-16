@@ -1,6 +1,7 @@
 package project.lib.protocol.scaffolding.parser;
 
 import java.util.ArrayList;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -81,6 +82,7 @@ public interface Parser<T> {
             if (first == null) {
                 return new Parsed<Stream<T>>(list.stream(), input);
             }
+            input = first.rest;
 
             while (true) {
                 final var sep = separator.parse(input);
@@ -97,6 +99,15 @@ public interface Parser<T> {
                 input = result.rest;
             }
             return new Parsed<Stream<T>>(list.stream(), input);
+        };
+    }
+
+    public default Parser<T> inspect(Consumer<Parsed<T>> action) {
+        return (input) -> {
+            final var result = this.parse(input);
+            if (result != null)
+                action.accept(result);
+            return result;
         };
     }
 }
