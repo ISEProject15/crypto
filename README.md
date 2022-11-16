@@ -47,26 +47,26 @@ sourceからlengthバイトを送信する．lengthが負のときは最後の�
 
 ### project.lib.protocol.MetaMessage
 ```ebnf
-MetaMessage ::= Id, "@", (RuleSet | Value), "\n";
-         Id ::= "[_a-zA-Z]?[_a-zA-Z0-9]*";
-    RuleSet ::= (Rule | RecRule), ('&', (Rule | RecRule))*;
+MetaMessage ::= Id, "@", Body, "\n";
+       Body ::= RuleSet | Atom;
+         Id ::= "[_a-zA-Z][_a-zA-Z0-9]*";
+    RuleSet ::= Rule, ('&', Rule)*;
+       Rule ::= AtomRule | RecRule;
     RecRule ::= Id, ':', RuleSet, ';';
-       Rule ::= Id, '=', Value;
-      Value ::= Atom;
-       Atom ::=  "[^,;]*";
+   AtomRule ::= Id, '=', Atom;
+       Atom ::=  "[^;&]+";
 ```
-サンプル: `key0:key01:key001=v001&key002=esc"ape;&key02-v01&v02;;&key1=v1\n`
+サンプル: `key0:key01:key001=v001&key002=esc"ape;&key02=v02;&key1=v1\n`
 これが表すデータは
 ```yaml
 key0:  
   key01: 
     key001: v001
     key002: esc"ape
-  key02: ["v01", "v02"]
+  key02: v02
 key1: v1
 ```
-> 配列表現は変更するかも．
-> この形式だとオブジェクトを配列内に持てない
+> 配列は現状サポートしない
 > 
 制御文字等はエスケープする．
 `'\', ('d' | 'x'), number, 'n'`
