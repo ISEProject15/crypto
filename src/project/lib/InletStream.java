@@ -28,7 +28,8 @@ class InputConvertedStream implements InletStream {
         this.buffer = new byte[DefaultBufferSize];
     }
 
-    private int buffered;
+    private int buffered;// loaded bytes count; if source was ended, bufferd will be inverse of bytes
+                         // count.
     private final byte[] buffer;
 
     private final InputStream source;
@@ -44,9 +45,10 @@ class InputConvertedStream implements InletStream {
         if (written < 0 || written > 0) {
             return written;
         }
-
+        // TODO: impl load source to the rest of destionation
         this.source.read(destination, written, 0);
-
+        // TODO: impl load source to buffer
+        // TODO: impl check source last check
         return 0;
     }
 
