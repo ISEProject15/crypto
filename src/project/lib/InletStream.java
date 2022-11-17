@@ -28,8 +28,9 @@ class InputConvertedStream implements InletStream {
         this.buffer = new byte[DefaultBufferSize];
     }
 
-    private int buffered;// loaded bytes count; if source was ended, bufferd will be inverse of bytes
-                         // count.
+    // loaded bytes count; if source was ended,
+    // bufferd will be inverse of bytes count.
+    private int buffered;
     private final byte[] buffer;
 
     private final InputStream source;
@@ -42,18 +43,24 @@ class InputConvertedStream implements InletStream {
     @Override
     public int read(byte[] destination) throws IOException {
         var written = this.flushBuffer(destination);
-        if (written < 0 || written > 0) {
+        // source was ended or no destination space left
+        if (written < 0 || destination.length <= written) {
             return written;
         }
-        // TODO: impl load source to the rest of destionation
-        this.source.read(destination, written, 0);
+        // load source to the rest of destionation
+        final var restWritten = this.source.read(destination, written, destination.length - written);
+        if (restWritten >= 0) {
+            written += restWritten;
+        }
+
         // TODO: impl load source to buffer
+
         // TODO: impl check source last check
-        return 0;
+        return written;
     }
 
     private int flushBuffer(byte[] destination) {
-        var buffered = this.buffered;
+        final var buffered = this.buffered;
         final var normalized = normalize(buffered);
         final var len = Math.min(destination.length, normalized);
         System.arraycopy(this.buffered, 0, destination, 0, len);
