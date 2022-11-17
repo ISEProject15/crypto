@@ -4,8 +4,8 @@ import project.lib.protocol.MetaMessage.Body;
 
 public class App {
     public static void main(String[] args) throws Exception {
-        final var parser = new project.lib.protocol.MetaMsgParser();
-        final var msg = parser.parse("id@key0:key01:key001=v001&key002=v002;&key02=v02;&key1=v1");
+        final var parser = project.lib.protocol.MetaMsgParser.instance;
+        final var msg = parser.parse("id@key0:key01:key001=v001&key002=v002;&key02=v02;&key1=v1\n");
         System.out.println(msg.toString());
         final var str = jsonify(msg.body());
         System.out.println(str);

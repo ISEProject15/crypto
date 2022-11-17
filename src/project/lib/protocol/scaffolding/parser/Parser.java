@@ -2,9 +2,7 @@ package project.lib.protocol.scaffolding.parser;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.stream.Stream;
 
 import project.lib.protocol.scaffolding.collections.HList;
 
@@ -121,5 +119,34 @@ public interface Parser<T> {
             }
             return x;
         });
+    }
+
+    public default Parser<T> after(java.util.function.Consumer<Parsed<T>> action) {
+        return (input) -> {
+            final var result = this.parse(input);
+            if (result != null) {
+                action.accept(result);
+            }
+            return result;
+        };
+    }
+
+    public default Parser<T> before(java.util.function.Consumer<Source> action) {
+        return (input) -> {
+            action.accept(input);
+            return this.parse(input);
+        };
+    }
+
+    public default Parser<T> inspect(java.util.function.Consumer<Source> actBefore,
+            java.util.function.Consumer<T> actAfter) {
+        return (input) -> {
+            actBefore.accept(input);
+            final var result = this.parse(input);
+            if (result != null) {
+                actAfter.accept(result.value);
+            }
+            return result;
+        };
     }
 }

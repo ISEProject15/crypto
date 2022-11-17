@@ -16,4 +16,9 @@ public class HList<T, U> {
     public <S> HList<HList<T, U>, S> push(S item) {
         return new HList<HList<T, U>, S>(this, item);
     }
+
+    @Override
+    public String toString() {
+        return "(" + this.rest.toString() + "," + this.head.toString() + ")";
+    }
 }

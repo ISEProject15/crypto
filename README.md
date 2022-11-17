@@ -55,7 +55,7 @@ MetaMessage ::= Id, "@", Body, "\n";
        Rule ::= AtomRule | RecRule;
     RecRule ::= Key, ':', RuleSet, ';';
    AtomRule ::= Key, '=', Atom;
-       Atom ::=  "[^;&]+";
+       Atom ::=  "[^;&\n]+";
 ```
 サンプル: `key0:key01:key001=v001&key002=esc"ape;&key02=v02;&key1=v1\n`
 これが表すデータは
