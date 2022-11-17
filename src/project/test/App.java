@@ -1,14 +1,18 @@
 package project.test;
 
+import project.lib.protocol.MetaMessageBuilder;
 import project.lib.protocol.MetaMessage.Body;
+import static project.lib.protocol.MetaMessageBuilder.assoc;
 
 public class App {
     public static void main(String[] args) throws Exception {
         final var parser = project.lib.protocol.MetaMsgParser.instance;
-        final var msg = parser.parse("id@key0:key01:key001=v001&key002=v002;&key02=v02;&key1=v1\n");
-        System.out.println(msg.toString());
+        final var msg = parser.parse("id@0:1:key001=v001&key002=v002;&key02=v02;&key1=v1");
         final var str = jsonify(msg.body());
         System.out.println(str);
+
+        final var created = MetaMessageBuilder.create("id", assoc("a", "b").assoc("c", assoc("d", "e")));
+        System.out.println(created.identity() + "@" + jsonify(created.body()));
 
         final var senderloop = new SenderLoop();
         final var receiverLoop = new ReceiverLoop();
@@ -21,7 +25,7 @@ public class App {
 
     private static String jsonify(Body body) {
         return body.match((atom) -> {
-            return atom.toString();
+            return "\"" + atom.text() + "\"";
         }, (mapping) -> {
             final var builder = new java.lang.StringBuilder();
             builder.append("{");
@@ -33,7 +37,7 @@ public class App {
                 isFirst = false;
                 final var key = entry.getKey();
                 final var value = entry.getValue();
-                builder.append(key).append(":").append(jsonify(value));
+                builder.append('"').append(key).append('"').append(":").append(jsonify(value));
             }
 
             return builder.append("}").toString();

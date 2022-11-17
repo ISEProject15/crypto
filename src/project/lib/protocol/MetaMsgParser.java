@@ -4,13 +4,15 @@ import java.util.HashMap;
 import java.util.List;
 
 import project.lib.protocol.MetaMessage.Body;
+import project.lib.protocol.MetaMessage.Body.Atom;
+import project.lib.protocol.MetaMessage.Body.Mapping;
 import project.lib.protocol.scaffolding.collections.HList;
 import project.lib.protocol.scaffolding.parser.Parser;
 import project.lib.protocol.scaffolding.parser.Parsers;
 import project.lib.protocol.scaffolding.parser.Source;
 
 public class MetaMsgParser implements MetaMessageParser {
-    private static final Parser<Atom> atom = Parsers.regex("[^;&\n]+").map(Atom::of);
+    private static final Parser<MetaMessage.Body.Atom> atom = Parsers.regex("[^;&\n]+").map(AtomImpl::of);
     private static final Parser<String> id = Parsers.regex("[_a-zA-Z][_a-zA-Z0-9]*");
     private static final Parser<String> key = Parsers.regex("[_a-zA-Z0-9]+");
     private static final Parser<String> at = Parsers.regex("@");
@@ -18,13 +20,12 @@ public class MetaMsgParser implements MetaMessageParser {
     private static final Parser<String> semicolon = Parsers.regex(";");
     private static final Parser<String> equal = Parsers.regex("=");
     private static final Parser<String> ampasand = Parsers.regex("&");
-    private static final Parser<String> newline = Parsers.regex("\n");
     private static final Parser<AtomRule> atomRule = key.join(equal).join(atom).map(AtomRule::of);
     private static final Parser<RuleSet> ruleSet = createRuleSet();
-    private static final Parser<Mapping> mapping = ruleSet.map(Mapping::of);
+    private static final Parser<Mapping> mapping = ruleSet.map(MetaMsgParser::mappingOf);
     private static final Parser<RecRule> recRule = key.join(colon).join(ruleSet).join(semicolon).map(RecRule::of);
     private static final Parser<Body> body = mapping.map(x -> (Body) x).or(atom.map(x -> (Body) x));
-    private static final Parser<MetaMessage> metaMessage = id.join(at).join(body).join(newline)
+    private static final Parser<MetaMessage> metaMessage = id.join(at).join(body)
             .map(MetaMsgParser::createMetaMessage);
 
     private static Parser<RuleSet> createRuleSet() {
@@ -34,9 +35,9 @@ public class MetaMsgParser implements MetaMessageParser {
         return separated.map(RuleSet::of);
     }
 
-    private static MetaMessage createMetaMessage(HList<HList<HList<String, String>, MetaMessage.Body>, String> list) {
-        final var body = list.rest.head;
-        final var id = list.rest.rest.rest;
+    private static MetaMessage createMetaMessage(HList<HList<String, String>, MetaMessage.Body> list) {
+        final var body = list.head;
+        final var id = list.rest.rest;
 
         return new MetaMessage() {
             {
@@ -59,12 +60,29 @@ public class MetaMsgParser implements MetaMessageParser {
         };
     }
 
+    private static Mapping mappingOf(RuleSet ruleSet) {
+        final var builder = new MappingImpl.Builder();
+        for (final var rule : ruleSet.rules) {
+            if (rule.getClass() == RecRule.class) {
+                final var r = (RecRule) rule;
+                builder.add(r.key, mappingOf(r.ruleSet));
+            } else {
+                final var r = (AtomRule) rule;
+                builder.add(r.key, r.atom);
+            }
+        }
+        return builder.build();
+    }
+
     public static final MetaMessageParser instance = new MetaMsgParser();
 
     @Override
     public MetaMessage parse(CharSequence sequence) {
         final var result = metaMessage.parse(Source.from(sequence));
         if (result == null) {
+            return null;
+        }
+        if (!result.rest.isEmpty()) {
             return null;
         }
         return result.value;
@@ -118,75 +136,5 @@ final class AtomRule extends Rule {
     private AtomRule(String key, Atom atom) {
         super(key);
         this.atom = atom;
-    }
-}
-
-class Mapping extends MetaMessage.Body.Mapping {
-    public static class Builder {
-        private final HashMap<String, Body> map;
-
-        Builder() {
-            this.map = new HashMap<>();
-        }
-
-        public Builder add(String key, Body value) {
-            this.map.put(key, value);
-            return this;
-        }
-
-        public project.lib.protocol.Mapping build() {
-            return new project.lib.protocol.Mapping(map);
-        }
-    }
-
-    public static project.lib.protocol.Mapping of(RuleSet ruleSet) {
-        final var builder = builder();
-        for (final var rule : ruleSet.rules) {
-            if (rule.getClass() == RecRule.class) {
-                final var r = (RecRule) rule;
-                builder.add(r.key, project.lib.protocol.Mapping.of(r.ruleSet));
-            } else {
-                final var r = (AtomRule) rule;
-                builder.add(r.key, r.atom);
-            }
-        }
-        return builder.build();
-    }
-
-    public static project.lib.protocol.Mapping.Builder builder() {
-        return new Builder();
-    }
-
-    private final HashMap<String, Body> map;
-
-    private Mapping(HashMap<String, Body> map) {
-        this.map = map;
-    }
-
-    @Override
-    public Body get(String key) {
-        return map.get(key);
-    }
-
-    @Override
-    public java.util.Set<java.util.Map.Entry<String, Body>> entries() {
-        return this.map.entrySet();
-    }
-}
-
-class Atom extends MetaMessage.Body.Atom {
-    public static project.lib.protocol.Atom of(String text) {
-        return new project.lib.protocol.Atom(text);
-    }
-
-    final String text;
-
-    private Atom(String text) {
-        this.text = text;
-    }
-
-    @Override
-    public String text() {
-        return this.text;
     }
 }

@@ -16,29 +16,6 @@ Java17 - OpenJDK 17
 
 このパッケージ直下のクラスは暗号，プロトコル共通で用いられる
 
-### project.lib.DuplexStream
-双方向通信用のストリームを表すインターフェイス
-
-#### メンバー
-##### read
-定義
-
-```java
-public int read(byte[] destination);
-```
-データを受信してdestinationに書き込み，書き込んだバイト数を返す．ただし，最後のブロックを書き込んだ場合は書き込んだバイト数のnotを返す．
-
-スレッドセーフである必要がある．
-
-
-##### write
-```java
-public void write(byte[] source, int length);
-```
-sourceからlengthバイトを送信する．lengthが負のときは最後のブロックであることを表す．
-
-スレッドセーフである必要がある．
-
 ## project.lib.crypto
 暗号の定義を入れるパッケージ
 
