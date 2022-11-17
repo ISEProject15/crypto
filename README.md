@@ -48,12 +48,13 @@ sourceからlengthバイトを送信する．lengthが負のときは最後の�
 ### project.lib.protocol.MetaMessage
 ```ebnf
 MetaMessage ::= Id, "@", Body, "\n";
-       Body ::= RuleSet | Atom;
          Id ::= "[_a-zA-Z][_a-zA-Z0-9]*";
+       Body ::= RuleSet | Atom;
+        Key ::= "[_a-zA-Z0-9]+";
     RuleSet ::= Rule, ('&', Rule)*;
        Rule ::= AtomRule | RecRule;
-    RecRule ::= Id, ':', RuleSet, ';';
-   AtomRule ::= Id, '=', Atom;
+    RecRule ::= Key, ':', RuleSet, ';';
+   AtomRule ::= Key, '=', Atom;
        Atom ::=  "[^;&]+";
 ```
 サンプル: `key0:key01:key001=v001&key002=esc"ape;&key02=v02;&key1=v1\n`

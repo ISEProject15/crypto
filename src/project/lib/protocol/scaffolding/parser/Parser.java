@@ -1,6 +1,7 @@
 package project.lib.protocol.scaffolding.parser;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -58,7 +59,7 @@ public interface Parser<T> {
     }
 
     // create a parser represents syntax of (this*)
-    public default Parser<Stream<T>> repeat() {
+    public default Parser<List<T>> repeat() {
         return (input) -> {
             final var list = new ArrayList<T>();
 
@@ -70,19 +71,19 @@ public interface Parser<T> {
                 list.add(result.value);
                 input = result.rest;
             }
-            return new Parsed<Stream<T>>(list.stream(), input);
+            return new Parsed<List<T>>(list, input);
         };
     }
 
-    // create a parser represents syntax of [this, (separator, this)*, [separator]]
-    // if lower less than or equal to 0, lower is ignored.
-    // if upper less than or equal to 0, upper is ignored.
-    public default Parser<Stream<T>> separated(Parser<?> separator, int lower, int upper) {
+    // create a parser represents syntax of [this, (separator, this)*]
+    // but less than or equal to upper times. if upper less than or equal to 0,
+    // upper is ignored.
+    public default Parser<List<T>> separatedMost(Parser<?> separator, int upper) {
         return (input) -> {
             final var list = new ArrayList<T>();
             final var first = this.parse(input);
             if (first == null) {
-                return new Parsed<Stream<T>>(list.stream(), input);
+                return new Parsed<List<T>>(list, input);
             }
             list.add(first.value);
             input = first.rest;
@@ -92,72 +93,33 @@ public interface Parser<T> {
                 if (sep == null) {
                     break;
                 }
-                input = sep.rest;
 
-                final var result = this.parse(input);
-                if (result == null)
+                final var result = this.parse(sep.rest);
+                if (result == null) {
                     break;
+                }
 
                 list.add(result.value);
                 input = result.rest;
+
+                if (upper > 0 && list.size() > upper) {
+                    return null;
+                }
             }
-            if (lower > 0 && list.size() < lower) {
-                return null;
-            }
-            if (upper > 0 && list.size() > upper) {
-                return null;
-            }
-            return new Parsed<Stream<T>>(list.stream(), input);
+
+            return new Parsed<List<T>>(list, input);
         };
     }
 
     // create a parser represents syntax of (this, (separator, this)*)
     // if lower less than or equal to 0, lower is ignored.
     // if upper less than or equal to 0, upper is ignored.
-    public default Parser<Stream<T>> separatedExact(Parser<?> separator, int lower, int upper) {
-        return (input) -> {
-            final var list = new ArrayList<T>();
-            final var first = this.parse(input);
-            if (first == null) {
+    public default Parser<List<T>> separated(Parser<?> separator, int lower, int upper) {
+        return separatedMost(separator, upper).map(x -> {
+            if (lower > 0 && x.size() < lower) {
                 return null;
             }
-            list.add(first.value);
-            input = first.rest;
-            while (true) {
-                final var sep = separator.parse(input);
-                if (sep == null) {
-                    break;
-                }
-                final var result = this.parse(sep.rest);
-                if (result == null) {
-                    return null;
-                }
-                list.add(result.value);
-                input = result.rest;
-            }
-            if (lower > 0 && list.size() < lower) {
-                return null;
-            }
-            if (upper > 0 && list.size() > upper) {
-                return null;
-            }
-            return new Parsed<Stream<T>>(list.stream(), input);
-        };
-    }
-
-    public default Parser<T> after(Consumer<Parsed<T>> action) {
-        return (input) -> {
-            final var result = this.parse(input);
-            action.accept(result);
-            return result;
-        };
-    }
-
-    public default Parser<T> before(Consumer<Source> action) {
-        return (input) -> {
-            action.accept(input);
-            final var result = this.parse(input);
-            return result;
-        };
+            return x;
+        });
     }
 }
