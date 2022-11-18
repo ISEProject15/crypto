@@ -13,8 +13,6 @@ public interface OutletStream extends Closeable {
     // sourceからlengthバイトを送信する．
     // lengthが負のときは最後のブロックであることを表す．
     public void write(byte[] source, int length) throws IOException;
-
-    public void flush() throws IOException;
 }
 
 class OutputToOutletStream implements OutletStream {
@@ -26,11 +24,9 @@ class OutputToOutletStream implements OutletStream {
     @Override
     public void write(byte[] source, int length) throws IOException {
         this.source.write(source, 0, length);
-    }
-
-    @Override
-    public void flush() {
-        this.source.flush();
+        if(length < 0) {
+            this.source.flush();
+        }
     }
 
     @Override
