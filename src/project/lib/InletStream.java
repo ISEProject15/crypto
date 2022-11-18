@@ -7,23 +7,66 @@ import java.io.InputStream;
 //入力用のストリームを表すインターフェイス
 public interface InletStream extends Closeable {
     public static InletStream from(InputStream source) {
-        return new InputConvertedStream(source);
+        return new InputToInletStream(source);
     }
 
     // データを受信してdestinationに書き込む．
     // 書き込んだバイト数を返す．ただし，最後のブロックを書き込んだ場合は書き込んだバイト数のnotを返す．
-    // スレッドセーフである必要がある．
     public int read(byte[] destination) throws IOException;
+
+    public default InputStream toInputStream() {
+
+    }
 }
 
-class InputConvertedStream implements InletStream {
+class InletToInputStream extends InputStream {
+    private static int normalize(int num) {
+        return num ^ (num >> 31);
+    }
+    private static final int DefaultBufferSize = 1024;
+
+    InletToInputStream(InletStream source) {
+        this.source = source;
+        this.buffer = new byte[DefaultBufferSize];
+        this.buffered = 0;
+        this.bufferOffset = 0;
+    }
+
+    private final InletStream source;
+    private final byte[] buffer;
+    private int buffered;
+    private int bufferOffset;
+
+    @Override 
+    public int read() {
+        final var buffer = this.buffer;
+        if(normalize(this.buffered) <= 0) {
+            final var written = this.loadBuffer();
+            if(written < 0) {
+                return -1;
+            }
+        }
+        final var result = buffer[this.bufferOffset];
+        this.bufferOffset++;
+        
+
+        return result;
+    }
+
+    // load source to buffer. returns written bytes; if source was ended, returns -1.
+    private int loadBuffer() {
+
+    }
+}
+
+class InputToInletStream implements InletStream {
     private static int normalize(int num) {
         return num ^ (num >> 31);
     }
 
     private static final int DefaultBufferSize = 1024;
 
-    InputConvertedStream(InputStream source) {
+    InputToInletStream(InputStream source) {
         this.source = source;
         this.buffer = new byte[DefaultBufferSize];
     }
@@ -43,7 +86,7 @@ class InputConvertedStream implements InletStream {
     @Override
     public int read(byte[] destination) throws IOException {
         var written = this.flushBuffer(destination);
-        if (written < 0) { // source was ended 
+        if (written < 0) {// source was ended 
             return written;
         }
         if(written < destination.length) {// destination space left
@@ -60,10 +103,13 @@ class InputConvertedStream implements InletStream {
         }
         return written;
     }
+    @Override
+    public InputStream toInputStream() {
+        return this.source;
+    }
 
     // load source to buffer. returns written bytes; if source was ended, returns -1.
-    private int loadBuffer() throws IOException
-    {
+    private int loadBuffer() throws IOException {
         final var buffer = this.buffer;
         final var buffered = this.buffered;
         if(buffered < 0) {

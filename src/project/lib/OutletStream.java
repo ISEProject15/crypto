@@ -7,6 +7,5 @@ import java.io.IOException;
 public interface OutletStream extends Closeable {
     // sourceからlengthバイトを送信する．
     // lengthが負のときは最後のブロックであることを表す．
-    // スレッドセーフである必要がある．
     public void write(byte[] source, int length) throws IOException;
 }
