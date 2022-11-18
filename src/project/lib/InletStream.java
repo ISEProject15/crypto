@@ -153,19 +153,19 @@ class InputToInletStream implements InletStream {
     private int flushBuffer(byte[] destination) {
         final var buffered = this.buffered;
         final var normalized = StreamUtil.lenof(buffered);
-        final var len = Math.min(destination.length, normalized);
-        System.arraycopy(this.buffer, 0, destination, 0, len);
+        final var flushed = Math.min(destination.length, normalized);
+        System.arraycopy(this.buffer, 0, destination, 0, flushed);
 
         if (buffered < 0) {
-            this.buffered = ~(normalized - len);
+            this.buffered = ~(normalized - flushed);
         } else {
-            this.buffered -= len;
+            this.buffered -= flushed;
         }
 
         if (buffered < 0 && normalized <= destination.length) {// source was ended and buffer totally flushed
-            return ~len;
+            return ~flushed;
         }
 
-        return len;
+        return flushed;
     }
 }

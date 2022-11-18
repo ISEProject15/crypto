@@ -25,7 +25,7 @@ public class App {
         final var byteStream = new ByteArrayInputStream(new byte[] { 0, 1, 2, 3, 4, 5 });
         final var inletStream = InletStream.from(byteStream);
         final var transformed = new TransformedInletStream(inletStream, new DuplicationTransformer());
-        final var buffer = new byte[3];
+        final var buffer = new byte[1];
         while (true) {
             final var written = transformed.read(buffer);
             System.out.println("written:" + written + "=" + Arrays.toString(buffer));
@@ -63,6 +63,10 @@ public class App {
                 segment.length(len * 2);
                 buffer.push(segment);
             }
+            System.out.println("source:" + Arrays.toString(source));
+            System.out.println("sourcelength:" + sourceLength);
+            System.out.println("dst len:" + destination.length);
+
             var written = buffer.read(destination);
             if (this.ended && buffer.isEmpty()) {
                 return ~written;
