@@ -21,7 +21,10 @@ public interface InletStream extends Closeable {
 
 class InletToInputStream extends InputStream {
     private static int normalize(int num) {
-        return num ^ (num >> 31);
+        return num ^ maskOf(num);
+    }
+    private static int maskOf(int num) {
+        return num >> 31;
     }
     private static final int DefaultBufferSize = 1024;
 
@@ -48,14 +51,13 @@ class InletToInputStream extends InputStream {
         }
         final var result = buffer[this.bufferOffset];
         this.bufferOffset++;
-        
-
+        this.buffered = (normalize(this.buffered) - 1) ^ maskOf(this.buffered);
         return result;
     }
 
     // load source to buffer. returns written bytes; if source was ended, returns -1.
     private int loadBuffer() {
-
+        
     }
 }
 
