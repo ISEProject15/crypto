@@ -1,6 +1,5 @@
 package project.lib.protocol;
 
-import java.util.HashMap;
 import java.util.List;
 
 import project.lib.protocol.MetaMessage.Body;

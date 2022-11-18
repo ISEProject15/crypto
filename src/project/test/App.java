@@ -1,8 +1,14 @@
 package project.test;
 
+import project.lib.InletStream;
+import project.lib.TransformedInletStream;
+import project.lib.Transformer;
 import project.lib.protocol.MetaMessageBuilder;
 import project.lib.protocol.MetaMessage.Body;
 import static project.lib.protocol.MetaMessageBuilder.assoc;
+
+import java.io.ByteArrayInputStream;
+import java.util.Arrays;
 
 public class App {
     public static void main(String[] args) throws Exception {
@@ -14,6 +20,19 @@ public class App {
         final var created = MetaMessageBuilder.create("id", assoc("a", "b").assoc("c", assoc("d", "e")));
         System.out.println(created.identity() + "@" + jsonify(created.body()));
 
+        final var byteStream = new ByteArrayInputStream(new byte[] { 0, 1, 2, 3, 4, 5 });
+        final var inletStream = InletStream.from(byteStream);
+        final var transformed = new TransformedInletStream(inletStream, new DuplicationTransformer());
+        final var buffer = new byte[3];
+        while (true) {
+            final var written = transformed.read(buffer);
+            System.out.println("written:" + written + "=" + Arrays.toString(buffer));
+            if (written < 0) {
+                break;
+            }
+        }
+        transformed.close();
+
         final var senderloop = new SenderLoop();
         final var receiverLoop = new ReceiverLoop();
         final var wiretapperLoop = new WiretapperLoop();
@@ -21,6 +40,28 @@ public class App {
         senderloop.start();
         receiverLoop.start();
         wiretapperLoop.start();
+    }
+
+    private static class DuplicationTransformer implements Transformer {
+        private byte[] buffer;
+        private int buffered;
+
+        private int bufferedCount() {
+            return this.buffered ^ (this.buffered >> 31);
+        }
+
+        @Override
+        public int transform(byte[] source, int sourceLength, byte[] destination) {
+            if (this.buffer != null) {
+                final var len = Math.min(this.bufferedCount(), destination.length);
+                System.arraycopy(this.buffer, 0, destination, 0, len);
+                final var left = this.bufferedCount() - len;
+                
+            }
+
+            return 0;
+        }
+
     }
 
     private static String jsonify(Body body) {
