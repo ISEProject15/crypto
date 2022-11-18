@@ -15,16 +15,13 @@ public interface InletStream extends Closeable {
     public int read(byte[] destination) throws IOException;
 
     public default InputStream toInputStream() {
-
+        return new InletToInputStream(this);
     }
 }
 
 class InletToInputStream extends InputStream {
     private static int normalize(int num) {
-        return num ^ maskOf(num);
-    }
-    private static int maskOf(int num) {
-        return num >> 31;
+        return num ^ (num >> 31);
     }
     private static final int DefaultBufferSize = 1024;
 
@@ -40,10 +37,11 @@ class InletToInputStream extends InputStream {
     private int buffered;
     private int bufferOffset;
 
+
     @Override 
     public int read() {
         final var buffer = this.buffer;
-        if(normalize(this.buffered) <= 0) {
+        if(this.bufferedCount() <= 0) {
             final var written = this.loadBuffer();
             if(written < 0) {
                 return -1;
@@ -51,13 +49,37 @@ class InletToInputStream extends InputStream {
         }
         final var result = buffer[this.bufferOffset];
         this.bufferOffset++;
-        this.buffered = (normalize(this.buffered) - 1) ^ maskOf(this.buffered);
+        this.buffered = this.bufferedCount(this.bufferedCount() - 1);
         return result;
     }
 
+    private int bufferedCount() {
+        return normalize(this.buffered);   
+    }
+    private void bufferedCount(int count) {
+        var mask = this.buffered >> 31;
+        this.buffered = count ^ mask;   
+    }
+
+    private bool sourceEnded() {
+        return this.buffered < 0;
+    }
+    
     // load source to buffer. returns written bytes; if source was ended, returns -1.
     private int loadBuffer() {
-        
+        final var buffer = this.buffer;
+        final var offset = this.bufferOffset;
+        final var buffered = this.buffered;
+        if(this.sourceEnded()) {
+            return -1;
+        } 
+        final int written = this.source.read(buffer, buffered, buffer.length - buffered);
+        if(written < 0) {//no data left in source; nothing was read.
+            this.buffered = ~buffered;
+            return written;
+        }
+        this.buffered = buffered + written;
+        return written;
     }
 }
 
@@ -82,7 +104,7 @@ class InputToInletStream implements InletStream {
 
     @Override
     public void close() throws IOException {
-        source.close();
+        this.source.close();
     }
 
     @Override
@@ -110,13 +132,18 @@ class InputToInletStream implements InletStream {
         return this.source;
     }
 
+    private bool sourceEnded() {
+        return this.buffered < 0;
+    }
+    
     // load source to buffer. returns written bytes; if source was ended, returns -1.
-    private int loadBuffer() throws IOException {
+    private int loadBuffer() {
         final var buffer = this.buffer;
+        final var offset = this.bufferOffset;
         final var buffered = this.buffered;
-        if(buffered < 0) {
-            return buffered;
-        }
+        if(this.sourceEnded()) {
+            return -1;
+        } 
         final int written = this.source.read(buffer, buffered, buffer.length - buffered);
         if(written < 0) {//no data left in source; nothing was read.
             this.buffered = ~buffered;
