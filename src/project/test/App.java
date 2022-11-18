@@ -1,6 +1,8 @@
 package project.test;
 
 import project.lib.InletStream;
+import project.lib.StreamBuffer;
+import project.lib.StreamUtil;
 import project.lib.TransformedInletStream;
 import project.lib.Transformer;
 import project.lib.protocol.MetaMessageBuilder;
@@ -43,23 +45,29 @@ public class App {
     }
 
     private static class DuplicationTransformer implements Transformer {
-        private byte[] buffer;
-        private int buffered;
+        final StreamBuffer buffer = new StreamBuffer();
 
-        private int bufferedCount() {
-            return this.buffered ^ (this.buffered >> 31);
-        }
+        boolean ended = false;
 
         @Override
         public int transform(byte[] source, int sourceLength, byte[] destination) {
-            if (this.buffer != null) {
-                final var len = Math.min(this.bufferedCount(), destination.length);
-                System.arraycopy(this.buffer, 0, destination, 0, len);
-                final var left = this.bufferedCount() - len;
-                
+            if (!this.ended) {
+                this.ended = StreamUtil.isLast(sourceLength);
+                // read to buffer
+                final var len = StreamUtil.lenof(sourceLength);
+                final var segment = buffer.rent(len * 2);
+                final var buf = segment.buffer;
+                for (var i = 0; i < len; ++i) {
+                    buf[2 * i] = buf[2 * i + 1] = source[i];
+                }
+                segment.length(len * 2);
+                buffer.push(segment);
             }
-
-            return 0;
+            var written = buffer.read(destination);
+            if (this.ended && buffer.isEmpty()) {
+                return ~written;
+            }
+            return written;
         }
 
     }

@@ -84,10 +84,6 @@ class InletToInputStream extends InputStream {
 }
 
 class InputToInletStream implements InletStream {
-    private static int normalize(int num) {
-        return num ^ (num >> 31);
-    }
-
     private static final int DefaultBufferSize = 1024;
 
     InputToInletStream(InputStream source) {
@@ -156,7 +152,7 @@ class InputToInletStream implements InletStream {
 
     private int flushBuffer(byte[] destination) {
         final var buffered = this.buffered;
-        final var normalized = normalize(buffered);
+        final var normalized = StreamUtil.lenof(buffered);
         final var len = Math.min(destination.length, normalized);
         System.arraycopy(this.buffer, 0, destination, 0, len);
 
