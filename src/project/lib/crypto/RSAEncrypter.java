@@ -12,7 +12,7 @@ public class RSAEncrypter implements project.lib.Transformer {
     }
 
     @Override
-    public int transform(int sourceLength, byte[] source, byte[] destination) {
+    public int transform(byte[] source, int sourceLength, byte[] destination) {
 
         return 0;
     }

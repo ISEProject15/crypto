@@ -23,6 +23,7 @@ class InletToInputStream extends InputStream {
     private static int normalize(int num) {
         return num ^ (num >> 31);
     }
+
     private static final int DefaultBufferSize = 1024;
 
     InletToInputStream(InletStream source) {
@@ -37,48 +38,47 @@ class InletToInputStream extends InputStream {
     private int buffered;
     private int bufferOffset;
 
-
-    @Override 
-    public int read() {
+    @Override
+    public int read() throws IOException {
         final var buffer = this.buffer;
-        if(this.bufferedCount() <= 0) {
+        if (this.bufferedCount() <= 0) {
             final var written = this.loadBuffer();
-            if(written < 0) {
+            if (written < 0) {
                 return -1;
             }
         }
         final var result = buffer[this.bufferOffset];
         this.bufferOffset++;
-        this.buffered = this.bufferedCount(this.bufferedCount() - 1);
+        this.bufferedCount(this.bufferedCount() - 1);
         return result;
     }
 
     private int bufferedCount() {
-        return normalize(this.buffered);   
-    }
-    private void bufferedCount(int count) {
-        var mask = this.buffered >> 31;
-        this.buffered = count ^ mask;   
+        return normalize(this.buffered);
     }
 
-    private bool sourceEnded() {
+    private void bufferedCount(int count) {
+        var mask = this.buffered >> 31;
+        this.buffered = count ^ mask;
+    }
+
+    private boolean sourceEnded() {
         return this.buffered < 0;
     }
-    
-    // load source to buffer. returns written bytes; if source was ended, returns -1.
-    private int loadBuffer() {
+
+    // load source to buffer. returns written bytes;
+    // if source was ended, returns -1.
+    private int loadBuffer() throws IOException {
         final var buffer = this.buffer;
-        final var offset = this.bufferOffset;
         final var buffered = this.buffered;
-        if(this.sourceEnded()) {
+        if (this.sourceEnded()) {
             return -1;
-        } 
-        final int written = this.source.read(buffer, buffered, buffer.length - buffered);
-        if(written < 0) {//no data left in source; nothing was read.
-            this.buffered = ~buffered;
-            return written;
         }
-        this.buffered = buffered + written;
+        if (buffered > 0) {
+            return 0;
+        }
+        final int written = this.source.read(buffer);
+        this.buffered = written;
         return written;
     }
 }
@@ -110,10 +110,10 @@ class InputToInletStream implements InletStream {
     @Override
     public int read(byte[] destination) throws IOException {
         var written = this.flushBuffer(destination);
-        if (written < 0) {// source was ended 
+        if (written < 0) {// source was ended
             return written;
         }
-        if(written < destination.length) {// destination space left
+        if (written < destination.length) {// destination space left
             // load source to the rest of destination
             final var restWritten = this.source.read(destination, written, destination.length - written);
             if (restWritten >= 0) {
@@ -121,31 +121,32 @@ class InputToInletStream implements InletStream {
             }
         }
         final var bufferWritten = this.loadBuffer();
-        //NOTE: if restWritten < 0, also bufferWritten < 0  
-        if(bufferWritten < 0) {// source was ended; no data was read, so destination is the last segment.
+        // NOTE: if restWritten < 0, also bufferWritten < 0
+        if (bufferWritten < 0) {// source was ended; no data was read, so destination is the last segment.
             return ~written;
         }
         return written;
     }
+
     @Override
     public InputStream toInputStream() {
         return this.source;
     }
 
-    private bool sourceEnded() {
+    private boolean sourceEnded() {
         return this.buffered < 0;
     }
-    
-    // load source to buffer. returns written bytes; if source was ended, returns -1.
-    private int loadBuffer() {
+
+    // load source to buffer. returns written bytes;
+    // if source was ended, returns -1
+    private int loadBuffer() throws IOException {
         final var buffer = this.buffer;
-        final var offset = this.bufferOffset;
         final var buffered = this.buffered;
-        if(this.sourceEnded()) {
+        if (this.sourceEnded()) {
             return -1;
-        } 
+        }
         final int written = this.source.read(buffer, buffered, buffer.length - buffered);
-        if(written < 0) {//no data left in source; nothing was read.
+        if (written < 0) {// no data left in source; nothing was read.
             this.buffered = ~buffered;
             return written;
         }

@@ -21,16 +21,17 @@ class OutputToOutletStream implements OutletStream {
     }
 
     private final OutputStream source;
+
     @Override
     public void write(byte[] source, int length) throws IOException {
         this.source.write(source, 0, length);
-        if(length < 0) {
+        if (length < 0) {
             this.source.flush();
         }
     }
 
     @Override
-    public void close() {
+    public void close() throws IOException {
         this.source.close();
-    } 
+    }
 }
