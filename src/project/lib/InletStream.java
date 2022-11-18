@@ -43,19 +43,38 @@ class InputConvertedStream implements InletStream {
     @Override
     public int read(byte[] destination) throws IOException {
         var written = this.flushBuffer(destination);
-        // source was ended or no destination space left
-        if (written < 0 || destination.length <= written) {
+        if (written < 0) { // source was ended 
             return written;
         }
-        // load source to the rest of destionation
-        final var restWritten = this.source.read(destination, written, destination.length - written);
-        if (restWritten >= 0) {
-            written += restWritten;
+        if(written < destination.length) {// destination space left
+            // load source to the rest of destination
+            final var restWritten = this.source.read(destination, written, destination.length - written);
+            if (restWritten >= 0) {
+                written += restWritten;
+            }
         }
+        final var bufferWritten = this.loadBuffer();
+        //NOTE: if restWritten < 0, also bufferWritten < 0  
+        if(bufferWritten < 0) {// source was ended; no data was read, so destination is the last segment.
+            return ~written;
+        }
+        return written;
+    }
 
-        // TODO: impl load source to buffer
-
-        // TODO: impl check source last check
+    // load source to buffer. returns written bytes; if source was ended, returns -1.
+    private int loadBuffer() throws IOException
+    {
+        final var buffer = this.buffer;
+        final var buffered = this.buffered;
+        if(buffered < 0) {
+            return buffered;
+        }
+        final int written = this.source.read(buffer, buffered, buffer.length - buffered);
+        if(written < 0) {//no data left in source; nothing was read.
+            this.buffered = ~buffered;
+            return written;
+        }
+        this.buffered = buffered + written;
         return written;
     }
 
@@ -63,7 +82,7 @@ class InputConvertedStream implements InletStream {
         final var buffered = this.buffered;
         final var normalized = normalize(buffered);
         final var len = Math.min(destination.length, normalized);
-        System.arraycopy(this.buffered, 0, destination, 0, len);
+        System.arraycopy(this.buffer, 0, destination, 0, len);
 
         if (buffered < 0) {
             this.buffered = ~(normalized - len);
