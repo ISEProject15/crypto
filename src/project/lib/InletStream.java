@@ -14,6 +14,12 @@ public interface InletStream extends Closeable {
     // 書き込んだバイト数を返す．ただし，最後のブロックを書き込んだ場合は書き込んだバイト数のnotを返す．
     public int read(byte[] destination) throws IOException;
 
+    // 次のreadの読み取りで推奨されるdestinationのサイズを返す．
+    // -1が返されたとき，推奨されるサイズは未定であることを示す．
+    public default int preferredBufferSize() {
+        return -1;
+    }
+
     public default InputStream toInputStream() {
         return new InletToInputStream(this);
     }
@@ -57,16 +63,12 @@ class InletToInputStream extends InputStream {
         this.buffered = count ^ StreamUtil.flagof(this.buffered);
     }
 
-    private boolean sourceEnded() {
-        return this.buffered < 0;
-    }
-
     // load source to buffer. returns written bytes;
     // if source was ended, returns -1.
     private int loadBuffer() throws IOException {
         final var buffer = this.buffer;
         final var buffered = this.buffered;
-        if (this.sourceEnded()) {
+        if (StreamUtil.isLast(buffered)) {
             return -1;
         }
         if (buffered > 0) {
@@ -130,6 +132,15 @@ class InputToInletStream implements InletStream {
         }
 
         return totalWritten;
+    }
+
+    @Override
+    public int preferredBufferSize() {
+        try {
+            return this.source.available();
+        } catch (IOException e) {
+            return -1;
+        }
     }
 
     @Override

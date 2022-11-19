@@ -6,6 +6,9 @@ import java.util.Iterator;
 
 public class StreamBuffer implements Iterable<Byte>, InletStream, OutletStream {
     public StreamBuffer(int minimumBufferSize) {
+        if (minimumBufferSize <= 0) {
+            throw new IllegalArgumentException();
+        }
         this.minimumBufferSize = minimumBufferSize;
     }
 

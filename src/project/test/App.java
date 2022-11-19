@@ -25,7 +25,8 @@ public class App {
         final var byteStream = new ByteArrayInputStream(new byte[] { 0, 1, 2, 3, 4, 5 });
         final var inletStream = InletStream.from(byteStream);
         final var transformed = new TransformedInletStream(inletStream, new DuplicationTransformer());
-        final var buffer = new byte[1];
+        final var buffer = new byte[12];
+        System.out.println(transformed.preferredBufferSize());
         while (true) {
             final var written = transformed.read(buffer);
             System.out.println("written:" + StreamUtil.lenof(written) + "=" + Arrays.toString(buffer));
@@ -75,6 +76,10 @@ public class App {
             }
         }
 
+        @Override
+        public int estimatedOutputSize(int sourceLength) {
+            return this.buffer.length() + StreamUtil.lenof(sourceLength) * 2;
+        }
     }
 
     private static String jsonify(Body body) {
