@@ -1,4 +1,4 @@
-package project.lib.protocol.scaffolding.collections;
+package project.lib.scaffolding.collections;
 
 public class HList<T, U> {
     public static <T, U> HList<T, U> of(T rest, U head) {

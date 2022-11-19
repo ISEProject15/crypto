@@ -1,4 +1,4 @@
-package project.lib.protocol.scaffolding.parser;
+package project.lib.scaffolding.parser;
 
 public interface Source extends CharSequence {
     public static Source from(CharSequence sequence) {

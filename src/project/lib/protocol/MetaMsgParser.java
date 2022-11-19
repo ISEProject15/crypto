@@ -5,10 +5,10 @@ import java.util.List;
 import project.lib.protocol.MetaMessage.Body;
 import project.lib.protocol.MetaMessage.Body.Atom;
 import project.lib.protocol.MetaMessage.Body.Mapping;
-import project.lib.protocol.scaffolding.collections.HList;
-import project.lib.protocol.scaffolding.parser.Parser;
-import project.lib.protocol.scaffolding.parser.Parsers;
-import project.lib.protocol.scaffolding.parser.Source;
+import project.lib.scaffolding.collections.HList;
+import project.lib.scaffolding.parser.Parser;
+import project.lib.scaffolding.parser.Parsers;
+import project.lib.scaffolding.parser.Source;
 
 public class MetaMsgParser implements MetaMessageParser {
     private static final Parser<MetaMessage.Body.Atom> atom = Parsers.regex("[^;&\n]+").map(AtomImpl::of);

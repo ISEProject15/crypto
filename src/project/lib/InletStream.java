@@ -20,10 +20,6 @@ public interface InletStream extends Closeable {
 }
 
 class InletToInputStream extends InputStream {
-    private static int normalize(int num) {
-        return num ^ (num >> 31);
-    }
-
     private static final int DefaultBufferSize = 1024;
 
     InletToInputStream(InletStream source) {
@@ -54,12 +50,11 @@ class InletToInputStream extends InputStream {
     }
 
     private int bufferedCount() {
-        return normalize(this.buffered);
+        return StreamUtil.lenof(this.buffered);
     }
 
     private void bufferedCount(int count) {
-        var mask = this.buffered >> 31;
-        this.buffered = count ^ mask;
+        this.buffered = count ^ StreamUtil.flagof(this.buffered);
     }
 
     private boolean sourceEnded() {
@@ -84,18 +79,18 @@ class InletToInputStream extends InputStream {
 }
 
 class InputToInletStream implements InletStream {
-    private static final int DefaultBufferSize = 1024;
-
     InputToInletStream(InputStream source) {
         this.source = source;
-        this.buffer = new byte[DefaultBufferSize];
+        this.buffer = -2;
     }
 
-    // loaded bytes count; if source was ended,
-    // bufferd will be inverse of bytes count.
-    private int buffered;
-    private final byte[] buffer;
+    private static final byte SOURCE_WAS_ENDED = -1;
+    private static final byte NO_BYTE_BUFFERED = -2;
 
+    // buffered byte.
+    // if buffer == -1, source was ended.
+    // if buffer == -2, no byte buffered.
+    private int buffer;
     private final InputStream source;
 
     @Override
@@ -105,67 +100,40 @@ class InputToInletStream implements InletStream {
 
     @Override
     public int read(byte[] destination) throws IOException {
-        var written = this.flushBuffer(destination);
-        if (written < 0) {// source was ended
-            return written;
+        if (this.buffer == SOURCE_WAS_ENDED) {
+            return -1;
         }
-        if (written < destination.length) {// destination space left
-            // load source to the rest of destination
-            final var restWritten = this.source.read(destination, written, destination.length - written);
-            if (restWritten >= 0) {
-                written += restWritten;
-            }
+        if (destination.length <= 0) {
+            return 0;
         }
-        final var bufferWritten = this.loadBuffer();
-        // NOTE: if restWritten < 0, also bufferWritten < 0
-        if (bufferWritten < 0) {// source was ended; no data was read, so destination is the last segment.
-            return ~written;
+        // read buffer to destination
+        final var buffered = this.buffer != NO_BYTE_BUFFERED;
+        var totalWritten = 0;
+        if (buffered) {
+            destination[0] = (byte) this.buffer;
+            this.buffer = NO_BYTE_BUFFERED;
+            totalWritten += 1;
         }
-        return written;
+
+        // read source to the rest of destination
+        final var written = this.source.read(destination, totalWritten, destination.length - totalWritten);
+        if (written < 0) { // source was ended
+            this.buffer = SOURCE_WAS_ENDED;
+            return ~totalWritten;
+        }
+
+        totalWritten += written;
+        // check if source was ended
+        this.buffer = this.source.read();
+        if (this.buffer == SOURCE_WAS_ENDED) {
+            return ~totalWritten;
+        }
+
+        return totalWritten;
     }
 
     @Override
     public InputStream toInputStream() {
         return this.source;
-    }
-
-    private boolean sourceEnded() {
-        return this.buffered < 0;
-    }
-
-    // load source to buffer. returns written bytes;
-    // if source was ended, returns -1
-    private int loadBuffer() throws IOException {
-        final var buffer = this.buffer;
-        final var buffered = this.buffered;
-        if (this.sourceEnded()) {
-            return -1;
-        }
-        final int written = this.source.read(buffer, buffered, buffer.length - buffered);
-        if (written < 0) {// no data left in source; nothing was read.
-            this.buffered = ~buffered;
-            return written;
-        }
-        this.buffered = buffered + written;
-        return written;
-    }
-
-    private int flushBuffer(byte[] destination) {
-        final var buffered = this.buffered;
-        final var normalized = StreamUtil.lenof(buffered);
-        final var flushed = Math.min(destination.length, normalized);
-        System.arraycopy(this.buffer, 0, destination, 0, flushed);
-
-        if (buffered < 0) {
-            this.buffered = ~(normalized - flushed);
-        } else {
-            this.buffered -= flushed;
-        }
-
-        if (buffered < 0 && normalized <= destination.length) {// source was ended and buffer totally flushed
-            return ~flushed;
-        }
-
-        return flushed;
     }
 }

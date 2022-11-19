@@ -1,17 +1,24 @@
 package project.lib;
 
+import java.io.IOException;
 import java.util.Arrays;
+import java.util.Iterator;
 
-public class StreamBuffer {
-    public StreamBuffer() {
-
+public class StreamBuffer implements Iterable<Byte>, InletStream, OutletStream {
+    public StreamBuffer(int minimumBufferSize) {
+        this.minimumBufferSize = minimumBufferSize;
     }
 
-    Segment firstSegment;
-    int firstOffset;
-    Segment lastSegment;
-    Segment pool;
-    int length;
+    public StreamBuffer() {
+        this(1024);
+    }
+
+    private final int minimumBufferSize;
+    private Segment firstSegment;
+    private int firstOffset;
+    private Segment lastSegment;
+    private int length;
+    private Segment pool;
 
     public int length() {
         return this.length;
@@ -32,7 +39,7 @@ public class StreamBuffer {
         }
 
         if (segment == null) {
-            return new Segment(capacity);
+            return new Segment(Math.max(capacity, minimumBufferSize));
         }
 
         if (prev == null) {
@@ -57,8 +64,9 @@ public class StreamBuffer {
     }
 
     public void write(byte[] source, int length) {
-        final var segment = this.rent(length);
-        segment.write(source, length);
+        final var len = StreamUtil.lenof(length);
+        final var segment = this.rent(len);
+        segment.write(source, len);
         this.push(segment);
     }
 
@@ -90,7 +98,47 @@ public class StreamBuffer {
         this.firstOffset = offset;
         this.pool = pool;
         this.length -= written;
+
+        if (this.isEmpty()) {
+            return ~written;
+        }
         return written;
+    }
+
+    @Override
+    public void close() throws IOException {
+
+    }
+
+    @Override
+    public Iterator<Byte> iterator() {
+        return new Iterator<Byte>() {
+            byte[] array;
+            int length;
+            int index;
+            Segment next;
+
+            @Override
+            public boolean hasNext() {
+                return this.next != null || this.index < this.length;
+            }
+
+            @Override
+            public Byte next() {
+                if (this.index >= this.length) {
+                    final var next = this.next;
+                    this.index = 0;
+                    this.length = next.length();
+                    this.next = next;
+                    return this.next();
+                }
+
+                final var result = this.array[this.index];
+                this.index++;
+                return result;
+            }
+
+        };
     }
 
     public static class Segment {

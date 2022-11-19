@@ -1,4 +1,4 @@
-package project.lib.protocol.scaffolding.parser;
+package project.lib.scaffolding.parser;
 
 import java.util.regex.Pattern;
 

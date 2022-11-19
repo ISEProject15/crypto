@@ -28,7 +28,7 @@ public class App {
         final var buffer = new byte[1];
         while (true) {
             final var written = transformed.read(buffer);
-            System.out.println("written:" + written + "=" + Arrays.toString(buffer));
+            System.out.println("written:" + StreamUtil.lenof(written) + "=" + Arrays.toString(buffer));
             if (written < 0) {
                 break;
             }
@@ -63,15 +63,16 @@ public class App {
                 segment.length(len * 2);
                 buffer.push(segment);
             }
-            System.out.println("source:" + Arrays.toString(source));
-            System.out.println("sourcelength:" + sourceLength);
-            System.out.println("dst len:" + destination.length);
-
-            var written = buffer.read(destination);
-            if (this.ended && buffer.isEmpty()) {
-                return ~written;
+            final var written = buffer.read(destination);
+            if (!StreamUtil.isLast(written)) {// buffer is not empty
+                return written;
             }
-            return written;
+
+            if (this.ended) {
+                return written;
+            } else {
+                return StreamUtil.lenof(written);
+            }
         }
 
     }

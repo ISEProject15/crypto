@@ -1,10 +1,10 @@
-package project.lib.protocol.scaffolding.parser;
+package project.lib.scaffolding.parser;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 
-import project.lib.protocol.scaffolding.collections.HList;
+import project.lib.scaffolding.collections.HList;
 
 // parser of T. this class MUST NOT have state.
 @FunctionalInterface
