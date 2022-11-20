@@ -5,27 +5,28 @@ import project.lib.StreamBuffer;
 import project.lib.StreamUtil;
 import project.lib.TransformedInletStream;
 import project.lib.Transformer;
-import project.lib.protocol.MetaMessageBuilder;
-import project.lib.protocol.MetaMessage.Body;
-import static project.lib.protocol.MetaMessageBuilder.assoc;
+import project.lib.protocol.Ion;
+import project.lib.protocol.MetaMessage;
+
+import static project.lib.protocol.IonBuilder.assoc;
 
 import java.io.ByteArrayInputStream;
 import java.util.Arrays;
 
 public class App {
     public static void main(String[] args) throws Exception {
-        final var parser = project.lib.protocol.MetaMsgParser.instance;
-        final var msg = parser.parse("id@0:1:key001=v001&key002=v002;&key02=v02;&key1=v1");
-        final var str = jsonify(msg.body());
+        final var parser = project.lib.protocol.MetaMessageSerializer.instance;
+        final var msg = parser.deserialize("id@0:1:key001=v001&key002=v002;&key02=v02;&key1=v1\n");
+        final var str = jsonify(msg.body);
         System.out.println(str);
 
-        final var created = MetaMessageBuilder.create("id", assoc("a", "b").assoc("c", assoc("d", "e")));
-        System.out.println(created.identity() + "@" + jsonify(created.body()));
+        final var created = MetaMessage.of("id", Ion.of(assoc("a", "b").assoc("c", assoc("d", "e"))));
+        System.out.println(created.identity + "@" + jsonify(created.body));
 
         final var byteStream = new ByteArrayInputStream(new byte[] { 0, 1, 2, 3, 4, 5 });
         final var inletStream = InletStream.from(byteStream);
         final var transformed = new TransformedInletStream(inletStream, new DuplicationTransformer());
-        final var buffer = new byte[12];
+        final var buffer = new byte[5];
         System.out.println(transformed.preferredBufferSize());
         while (true) {
             final var written = transformed.read(buffer);
@@ -82,7 +83,7 @@ public class App {
         }
     }
 
-    private static String jsonify(Body body) {
+    private static String jsonify(Ion body) {
         return body.match((atom) -> {
             return "\"" + atom.text() + "\"";
         }, (mapping) -> {

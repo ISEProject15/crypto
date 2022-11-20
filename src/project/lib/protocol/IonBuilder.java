@@ -2,7 +2,7 @@ package project.lib.protocol;
 
 import java.util.HashMap;
 
-public class MetaMessageBuilder {
+public class IonBuilder {
     public static Associations assoc(String id, String atom) {
         return (builder) -> {
             builder.set(id, atom);
@@ -17,19 +17,14 @@ public class MetaMessageBuilder {
         };
     }
 
-    public static MetaMessage create(String id, Associations associations) {
+    public static Ion create(String atom) {
+        return AtomImpl.of(atom);
+    }
+
+    public static Ion create(Associations associations) {
         final var builder = new MappingBuilder();
         associations.apply(builder);
-        final var mapping = builder.build();
-        return MetaMsg.of(id, mapping);
-    }
-
-    public static MetaMessage create(String id, String atom) {
-        return MetaMsg.of(id, AtomImpl.of(atom));
-    }
-
-    public static MetaMessage create(String id, MetaMessage.Body body) {
-        return MetaMsg.of(id, body);
+        return builder.build();
     }
 
     @FunctionalInterface
@@ -50,7 +45,7 @@ public class MetaMessageBuilder {
             };
         }
 
-        public default Associations assoc(String key, MetaMessage.Body value) {
+        public default Associations assoc(String key, Ion value) {
             return (builder) -> {
                 this.apply(builder);
                 builder.set(key, value);
@@ -61,7 +56,7 @@ public class MetaMessageBuilder {
     }
 
     private static class MappingBuilder {
-        private final HashMap<String, MetaMessage.Body> map;
+        private final HashMap<String, Ion> map;
 
         MappingBuilder() {
             this.map = new HashMap<>();
@@ -71,12 +66,12 @@ public class MetaMessageBuilder {
             return this.set(key, AtomImpl.of(value));
         }
 
-        public MappingBuilder set(String key, MetaMessage.Body value) {
+        public MappingBuilder set(String key, Ion value) {
             this.map.put(key, value);
             return this;
         }
 
-        public MetaMessage.Body.Mapping build() {
+        public Ion.Mapping build() {
             return new MappingImpl(map);
         }
     }

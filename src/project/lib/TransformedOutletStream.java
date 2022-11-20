@@ -14,8 +14,9 @@ public class TransformedOutletStream implements OutletStream {
 
     @Override
     public void write(byte[] source, int length) throws IOException {
-        if (this.buffer == null) {
-            this.buffer = new byte[source.length];
+        final var estimated = transformer.estimatedOutputSize(length);
+        if (this.buffer == null || estimated > this.buffer.length) {
+            this.buffer = new byte[Math.max(estimated, source.length)];
         }
         var written = transformer.transform(source, length, this.buffer);
         stream.write(this.buffer, written);

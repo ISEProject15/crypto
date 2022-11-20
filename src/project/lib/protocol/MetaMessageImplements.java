@@ -2,33 +2,8 @@ package project.lib.protocol;
 
 import java.util.HashMap;
 
-class MetaMsg implements MetaMessage {
-    public static MetaMessage of(String id, MetaMessage.Body body) {
-        return new MetaMsg(id, body);
-    }
-
-    public MetaMsg(String id, MetaMessage.Body body) {
-        this.id = id;
-        this.body = body;
-    }
-
-    private final String id;
-    private final MetaMessage.Body body;
-
-    @Override
-    public String identity() {
-        return this.id;
-    }
-
-    @Override
-    public Body body() {
-        return this.body;
-    }
-
-}
-
-class AtomImpl extends MetaMessage.Body.Atom {
-    public static MetaMessage.Body.Atom of(String text) {
+class AtomImpl extends Ion.Atom {
+    public static Ion.Atom of(String text) {
         return new AtomImpl(text);
     }
 
@@ -44,37 +19,37 @@ class AtomImpl extends MetaMessage.Body.Atom {
     }
 }
 
-class MappingImpl extends MetaMessage.Body.Mapping {
+class MappingImpl extends Ion.Mapping {
     public static class Builder {
-        private final HashMap<String, MetaMessage.Body> map;
+        private final HashMap<String, Ion> map;
 
         Builder() {
             this.map = new HashMap<>();
         }
 
-        public Builder add(String key, MetaMessage.Body value) {
+        public Builder add(String key, Ion value) {
             this.map.put(key, value);
             return this;
         }
 
-        public MetaMessage.Body.Mapping build() {
+        public Ion.Mapping build() {
             return new MappingImpl(map);
         }
     }
 
-    private final HashMap<String, MetaMessage.Body> map;
+    private final HashMap<String, Ion> map;
 
-    public MappingImpl(HashMap<String, MetaMessage.Body> map) {
+    public MappingImpl(HashMap<String, Ion> map) {
         this.map = map;
     }
 
     @Override
-    public MetaMessage.Body get(String key) {
+    public Ion get(String key) {
         return map.get(key);
     }
 
     @Override
-    public java.util.Set<java.util.Map.Entry<String, MetaMessage.Body>> entries() {
+    public java.util.Set<java.util.Map.Entry<String, Ion>> entries() {
         return this.map.entrySet();
     }
 }
