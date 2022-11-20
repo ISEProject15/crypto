@@ -7,6 +7,7 @@ import project.lib.TransformedInletStream;
 import project.lib.Transformer;
 import project.lib.protocol.Ion;
 import project.lib.protocol.MetaMessage;
+import project.lib.protocol.MetaMessageSerializer;
 
 import static project.lib.protocol.IonBuilder.assoc;
 
@@ -21,7 +22,8 @@ public class App {
         System.out.println(str);
 
         final var created = MetaMessage.of("id", Ion.of(assoc("a", "b").assoc("c", assoc("d", "e"))));
-        System.out.println(created.identity + "@" + jsonify(created.body));
+        final var serialized = MetaMessageSerializer.instance.serialize(created);
+        System.out.println(serialized);
 
         final var byteStream = new ByteArrayInputStream(new byte[] { 0, 1, 2, 3, 4, 5 });
         final var inletStream = InletStream.from(byteStream);

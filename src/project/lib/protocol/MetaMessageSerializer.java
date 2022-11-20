@@ -7,7 +7,7 @@ import project.lib.scaffolding.parser.Parser;
 import project.lib.scaffolding.parser.Parsers;
 import project.lib.scaffolding.parser.Source;
 
-public class MetaMessageSerializer implements Serializer<MetaMessage> {
+public class MetaMessageSerializer implements StringSerializer<MetaMessage> {
     private static final Parser<String> id = Parsers.regex("[_a-zA-Z][_a-zA-Z0-9]*");
     private static final Parser<String> at = Parsers.regex("@");
     private static final Parser<String> LF = Parsers.regex("\n");

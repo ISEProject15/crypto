@@ -10,7 +10,7 @@ import project.lib.scaffolding.parser.Parser;
 import project.lib.scaffolding.parser.Parsers;
 import project.lib.scaffolding.parser.Source;
 
-public class IonSerializer implements Serializer<Ion> {
+public class IonSerializer implements StringSerializer<Ion> {
     private static final Parser<Ion.Atom> atom = Parsers.regex("[^;&\n]+").map(AtomImpl::of);
     private static final Parser<String> key = Parsers.regex("[_a-zA-Z0-9]+");
     private static final Parser<String> colon = Parsers.regex(":");
