@@ -16,11 +16,6 @@ import java.util.Arrays;
 
 public class App {
     public static void main(String[] args) throws Exception {
-        final var parser = project.lib.protocol.MetaMessageSerializer.instance;
-        final var msg = parser.deserialize("id@0:1:key001=v001&key002=v002;&key02=v02;&key1=v1\n");
-        final var str = jsonify(msg.body);
-        System.out.println(str);
-
         final var created = MetaMessage.of("id", Ion.of(assoc("a", "b").assoc("c", assoc("d", "e"))));
         final var serialized = MetaMessageSerializer.instance.serialize(created);
         System.out.println(serialized);

@@ -22,31 +22,34 @@ Java17 - OpenJDK 17
 ## project.lib.protocol
 プロトコルの定義を入れるパッケージ
 
-### project.lib.protocol.DynamicObject
+### project.lib.protocol.Ion
 オブジェクトを文字列表現する記法として，':'を文字列キーとオブジェクトの関連付け，'='を文字列キーと文字列の関連付けに利用し，兄弟を表すのに'&'を利用する記法として，
 Inline Object Notation = IONを定義した．
 ```ebnf
-     ION ::= RuleSet | Atom;
-     Key ::= "[_a-zA-Z0-9]+";
- RuleSet ::= Rule, ('&', Rule)*;
-    Rule ::= AtomRule | RecRule;
- RecRule ::= Key, ':', RuleSet, ';';
-AtomRule ::= Key, '=', Atom;
-    Atom ::=  "[^;&\n]+";
+      ION ::= RuleSet | Atom;
+      Key ::= "[_a-zA-Z0-9]+";
+  RuleSet ::= Rule, ('&', Rule)*;
+     Rule ::= AtomRule | RecRule;
+ArrayRule ::= Key, '|' Rule, ('+', Rule)*, ';';
+  RecRule ::= Key, ':', RuleSet, ';';
+ AtomRule ::= Key, '=', Atom;
+     Atom ::=  "[^;&+\n]+";
+
 ```
 
-サンプル: `key0:key01:key001=v001&key002=esc"ape;&key02=v02;&key1=v1\n`
+サンプル: `key0:key01:key011=v010&key012=esc"ape;&key02|key021=v021&key022=v022+key023=v023;;&key1=v1\n`
 これが表すデータは
 ```yaml
 key0:  
   key01: 
-    key001: v001
-    key002: esc"ape
-  key02: v02
+    key011: v001
+    key012: esc"ape
+  key02:
+    - { key021:v021, key022:v22 }
+    - { k023:v023 }
 key1: v1
 ```
-> 配列は現状サポートしない
-> 
+
 制御文字等はエスケープする．
 `'\', ('d' | 'x'), number, 'n'`
 ex) \d0000n or \d000n
@@ -56,6 +59,16 @@ dが先頭なら10進数解釈，xが先頭なら16進数解釈
 ```ebnf
 MetaMessage ::= Id, "@", ION, "\n";
          Id ::= "[_a-zA-Z][_a-zA-Z0-9]*";
+```
+
+meta protocol diagram
+```mermaid
+sequenceDiagram
+  Client ->> Server: Connection Request:<br>protocol_identity_list
+  Note right of Server: generate public key or DH param if needed
+  Server ->> Client: Connection Response:<br>protocol_identity + protocol_init_args
+  Note over Server, Client: start protocol
+  
 ```
 
 ## project.test
