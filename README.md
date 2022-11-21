@@ -24,29 +24,38 @@ Java17 - OpenJDK 17
 
 ### project.lib.protocol.Ion
 オブジェクトを文字列表現する記法として，':'を文字列キーとオブジェクトの関連付け，'='を文字列キーと文字列の関連付けに利用し，兄弟を表すのに'&'を利用する記法として，
-Inline Object Notation = IONを定義した．
+Inline Object Notation = IONを定義する．
+
 ```ebnf
-      ION ::= RuleSet | Atom;
-      Key ::= "[_a-zA-Z0-9]+";
-  RuleSet ::= Rule, ('&', Rule)*;
-     Rule ::= AtomRule | RecRule;
-ArrayRule ::= Key, '|' Rule, ('+', Rule)*, ';';
-  RecRule ::= Key, ':', RuleSet, ';';
- AtomRule ::= Key, '=', Atom;
-     Atom ::=  "[^;&+\n]+";
-
+          ION = Literal | ObjectMembers;
+          Key = "[_a-zA-Z0-9]+";
+ObjectMembers = Rule, ('&', Rule)*;
+         Rule = Key, Literal;
+      Literal = ObjectLiteral | ArrayLiteral | AtomLiteral;
+  ElementAtom = "[^;&\n|:=][^;&\n]*";
+ ArrayElement = Literal | ElementAtom; 
+ ArrayLiteral = '|' ArrayElement, ('&', ArrayElement)*, ';';
+ObjectLiteral = ':', ObjectMembers, ';';
+  AtomLiteral = '=', Atom;
+         Atom =  "[^;&\n]+";
 ```
+頻出するパターンでサイズが小さくなるよう特殊化している．
 
-サンプル: `key0:key01:key011=v010&key012=esc"ape;&key02|key021=v021&key022=v022+key023=v023;;&key1=v1\n`
+IONの定義ではオブジェクトが送られる場合が多いため，オブジェクトのメンバーを書くことができるようにしている．
+
+Arrayの定義ではAtomを要素とする場合が多いため， Atomのみ特殊化している．
+
+
+サンプル: `key0:key01:key011=v010&key012=noesc"ape;&key02|:key021=v021&key022=v022;&value;;&key1=v1\n`
 これが表すデータは
 ```yaml
 key0:  
   key01: 
     key011: v001
-    key012: esc"ape
+    key012: noesc"ape
   key02:
     - { key021:v021, key022:v22 }
-    - { k023:v023 }
+    - value
 key1: v1
 ```
 
