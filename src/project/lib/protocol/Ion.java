@@ -6,7 +6,7 @@ import java.util.function.Function;
 
 import project.lib.protocol.IonBuilder.Associations;
 
-public abstract sealed class Ion permits Ion.Mapping, Ion.Atom {
+public abstract sealed class Ion permits Ion.Mapping, Ion.Atom, Ion.Array {
     public static Ion of(Associations associations) {
         return IonBuilder.create(associations);
     }
@@ -17,6 +17,7 @@ public abstract sealed class Ion permits Ion.Mapping, Ion.Atom {
 
     public static final int ATOM = 0;
     public static final int MAPPING = 1;
+    public static final int ARRAY = 2;
 
     public final int TYPE;
 
@@ -40,7 +41,7 @@ public abstract sealed class Ion permits Ion.Mapping, Ion.Atom {
         };
     }
 
-    // an interface represents mapping object like { key0: value0, key1: value1 }.
+    // an interface represents mapping object like { key0: value0, key1: value1 }
     public static non-sealed abstract class Mapping extends Ion {
         protected Mapping() {
             super(Ion.MAPPING);
@@ -58,5 +59,14 @@ public abstract sealed class Ion permits Ion.Mapping, Ion.Atom {
         }
 
         public abstract String text();
+    }
+    // an interface represents array object like [ "a", "b" ]
+    public static non-sealed abstract class Array extends Ion {
+        protected Array() {
+            super(Ion.Array);
+        }
+
+        public abstract Ion get(int index);
+        public abstract int length();
     }
 }
