@@ -59,8 +59,7 @@ public class App {
                 for (var i = 0; i < len; ++i) {
                     buf[2 * i] = buf[2 * i + 1] = source[i];
                 }
-                segment.length(len * 2);
-                buffer.push(segment);
+                buffer.push(segment, len * 2);
             }
             final var written = buffer.read(destination);
             if (!StreamUtil.isLast(written)) {// buffer is not empty
@@ -78,27 +77,6 @@ public class App {
         public int estimatedOutputSize(int sourceLength) {
             return this.buffer.length() + StreamUtil.lenof(sourceLength) * 2;
         }
-    }
-
-    private static String jsonify(Ion body) {
-        return body.match((atom) -> {
-            return "\"" + atom.text() + "\"";
-        }, (mapping) -> {
-            final var builder = new java.lang.StringBuilder();
-            builder.append("{");
-            var isFirst = true;
-            for (final var entry : mapping.entries()) {
-                if (!isFirst) {
-                    builder.append(",");
-                }
-                isFirst = false;
-                final var key = entry.getKey();
-                final var value = entry.getValue();
-                builder.append('"').append(key).append('"').append(":").append(jsonify(value));
-            }
-
-            return builder.append("}").toString();
-        });
     }
 }
 

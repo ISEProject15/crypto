@@ -1,11 +1,20 @@
 package project.lib.protocol;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+
+import project.lib.scaffolding.collections.SegmentBuffer;
 
 public class IonBuilder {
     public static Associations assoc(String id, String atom) {
         return (builder) -> {
             builder.set(id, atom);
+        };
+    }
+
+    public static Associations assoc(String id, Ion ion) {
+        return (builder) -> {
+            builder.set(id, ion);
         };
     }
 
@@ -17,10 +26,6 @@ public class IonBuilder {
         };
     }
 
-    public static Ion create(String atom) {
-        return AtomImpl.of(atom);
-    }
-
     public static Ion create(Associations associations) {
         final var builder = new MappingBuilder();
         associations.apply(builder);
@@ -29,6 +34,8 @@ public class IonBuilder {
 
     @FunctionalInterface
     public static interface Associations {
+        public void apply(MappingBuilder builder);
+
         public default Associations assoc(String key, Associations association) {
             return (builder) -> {
                 this.apply(builder);
@@ -51,8 +58,33 @@ public class IonBuilder {
                 builder.set(key, value);
             };
         }
+    }
 
-        public void apply(MappingBuilder builder);
+    @FunctionalInterface
+    public static interface List {
+        public void apply(ArrayBuilder builder);
+
+        public default List add(Ion ion) {
+            return (builder) -> {
+                builder.add(ion);
+            };
+        }
+
+    }
+
+    private static class ArrayBuilder {
+        final Ion[] temp = new Ion[1];
+        SegmentBuffer<Ion[]> buffer = new SegmentBuffer<>(Ion[].class);
+
+        public ArrayBuilder add(Ion ion) {
+            temp[0] = ion;
+            this.buffer.write(temp, 1);
+            return this;
+        }
+
+        public Ion.Array build() {
+            return ArrayImpl.of(buffer.toArray());
+        }
     }
 
     private static class MappingBuilder {

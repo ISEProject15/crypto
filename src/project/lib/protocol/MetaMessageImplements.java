@@ -43,6 +43,10 @@ class MappingImpl extends Ion.Mapping {
         this.map = map;
     }
 
+    public void set(String key, Ion val) {
+        this.map.put(key, val);
+    }
+
     @Override
     public Ion get(String key) {
         return map.get(key);
@@ -51,5 +55,27 @@ class MappingImpl extends Ion.Mapping {
     @Override
     public java.util.Set<java.util.Map.Entry<String, Ion>> entries() {
         return this.map.entrySet();
+    }
+}
+
+class ArrayImpl extends Ion.Array {
+    public static Ion.Array of(Ion... items) {
+        return new ArrayImpl(items);
+    }
+
+    private ArrayImpl(Ion[] array) {
+        this.array = array;
+    }
+
+    private final Ion[] array;
+
+    @Override
+    public Ion get(int index) {
+        return this.array[index];
+    }
+
+    @Override
+    public int length() {
+        return this.array.length;
     }
 }
