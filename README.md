@@ -66,8 +66,8 @@ dが先頭なら10進数解釈，xが先頭なら16進数解釈
 
 ### project.lib.protocol.MetaMessage
 ```ebnf
-MetaMessage ::= Id, "@", ION, "\n";
-         Id ::= "[_a-zA-Z][_a-zA-Z0-9]*";
+MetaMessage = Id, "@", ION, "\n";
+         Id = "[_a-zA-Z][_a-zA-Z0-9]*";
 ```
 
 meta protocol diagram

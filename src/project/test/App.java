@@ -5,6 +5,7 @@ import project.lib.StreamBuffer;
 import project.lib.StreamUtil;
 import project.lib.TransformedInletStream;
 import project.lib.Transformer;
+import project.lib.protocol.Ion2JsonEncoder;
 import project.lib.protocol.IonCodec;
 
 import static project.lib.protocol.IonBuilder.*;
@@ -14,11 +15,15 @@ import java.util.Arrays;
 public class App {
     public static void main(String[] args) throws Exception {
         final var created = array().add("v0")
-                .add(mapping().map("k0", mapping().map("k00", "v00").map("k01", "v01")).map("k1",
-                        array().add("").add(array().add("v10").add("v11")).add("v12")).map("k2", "v2"))
+                .add(mapping().map("k0", mapping()
+                        .map("k00", "v00")
+                        .map("k01", "v01"))
+                        .map("k1", array().add("").add(array().add("v10").add("v11")).add("v12"))
+                        .map("k2", "v2"))
                 .add("v1");
         final var serialized = IonCodec.instance.encode(created);
         System.out.println(serialized);
+        System.out.println(Ion2JsonEncoder.instance.encode(created));
         final var deserialized = IonCodec.instance.decode(serialized);
         System.out.println(IonCodec.instance.encode(deserialized));
 
@@ -29,7 +34,7 @@ public class App {
         System.out.println(transformed.preferredBufferSize());
         while (true) {
             final var written = transformed.read(buffer);
-            System.out.println("written:" + StreamUtil.lenof(written) + "=" + Arrays.toString(buffer));
+            System.out.println("written:" + StreamUtil.lenof(written) + " " + Arrays.toString(buffer));
             if (written < 0) {
                 break;
             }
