@@ -1,5 +1,6 @@
 package project.lib.scaffolding.parser;
 
+import java.util.Optional;
 import java.util.regex.Pattern;
 
 public abstract class Parsers {
@@ -18,5 +19,17 @@ public abstract class Parsers {
 
     public static Parser<String> regex(String pattern) {
         return regex(Pattern.compile(pattern));
+    }
+
+    public static <T> Parser<Optional<T>> optional(Parser<T> parser) {
+        return (input) -> {
+            final var result = parser.parse(input);
+
+            if (result == null) {
+                return new Parsed<Optional<T>>(Optional.empty(), input);
+            }
+
+            return result.map(Optional::of);
+        };
     }
 }

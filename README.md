@@ -27,17 +27,17 @@ Java17 - OpenJDK 17
 Inline Object Notation = IONを定義する．
 
 ```ebnf
-          ION = Literal | ObjectMembers;
-          Key = "[_a-zA-Z0-9]+";
-ObjectMembers = Rule, ('&', Rule)*;
-         Rule = Key, Literal;
-      Literal = ObjectLiteral | ArrayLiteral | AtomLiteral;
-  ElementAtom = "[^;&\n|:=][^;&\n]*";
- ArrayElement = Literal | ElementAtom; 
- ArrayLiteral = '|' ArrayElement, ('&', ArrayElement)*, ';';
-ObjectLiteral = ':', ObjectMembers, ';';
-  AtomLiteral = '=', Atom;
-         Atom =  "[^;&\n]+";
+           ION = Literal | Mapping; 
+           Key = "[_a-zA-Z0-9]+";
+       Mapping = [Rule, ('&', Rule)*]; 
+          Rule = Key, Literal;
+       Literal = MappingLiteral | ArrayLiteral | AtomLiteral;
+     ArrayAtom = "([^;&\n|:=][^;&\n]*)?";
+  ArrayElement = Literal | ArrayAtom; 
+  ArrayLiteral = '|', [ArrayElement, ('&', ArrayElement)*], ';';
+MappingLiteral = ':', Mapping, ';';
+   AtomLiteral = '=', Atom;
+          Atom =  "[^;&\n]*";
 ```
 頻出するパターンでサイズが小さくなるよう特殊化している．
 

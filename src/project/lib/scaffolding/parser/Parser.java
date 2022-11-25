@@ -6,7 +6,7 @@ import java.util.function.Function;
 
 import project.lib.scaffolding.collections.HList;
 
-// parser of T. this class MUST NOT have state.
+// parser of T. this class instance MUST NOT have state.
 @FunctionalInterface
 public interface Parser<T> {
     public static <T> Parser<T> of(Parser<T> parser) {
@@ -14,6 +14,16 @@ public interface Parser<T> {
     }
 
     public Parsed<T> parse(Source sequence);
+
+    public default DiscardParser discard() {
+        return (input) -> {
+            final var result = this.parse(input);
+            if (result == null) {
+                return null;
+            }
+            return new Parsed<>(Unit.instance, result.rest);
+        };
+    }
 
     public default <U> Parser<U> map(Function<T, U> map) {
         return (input) -> {
@@ -37,7 +47,22 @@ public interface Parser<T> {
             }
 
             final var list = HList.of(result0.value, result1.value);
-            return new Parsed<HList<T, U>>(list, result1.rest);
+            return new Parsed<>(list, result1.rest);
+        };
+    }
+
+    public default Parser<T> join(DiscardParser parser) {
+        return (input) -> {
+            final var result0 = this.parse(input);
+            if (result0 == null) {
+                return null;
+            }
+            final var result1 = parser.parse(result0.rest);
+            if (result1 == null) {
+                return null;
+            }
+
+            return new Parsed<>(result0.value, result1.rest);
         };
     }
 
@@ -76,7 +101,7 @@ public interface Parser<T> {
     // create a parser represents syntax of [this, (separator, this)*]
     // but less than or equal to upper times. if upper less than or equal to 0,
     // upper is ignored.
-    public default Parser<List<T>> separatedMost(Parser<?> separator, int upper) {
+    public default Parser<List<T>> separatedMost(DiscardParser separator, int upper) {
         return (input) -> {
             final var list = new ArrayList<T>();
             final var first = this.parse(input);
@@ -86,7 +111,7 @@ public interface Parser<T> {
             list.add(first.value);
             input = first.rest;
 
-            while (true) {
+            while (upper <= 0 || list.size() < upper) {
                 final var sep = separator.parse(input);
                 if (sep == null) {
                     break;
@@ -99,10 +124,6 @@ public interface Parser<T> {
 
                 list.add(result.value);
                 input = result.rest;
-
-                if (upper > 0 && list.size() > upper) {
-                    return null;
-                }
             }
 
             return new Parsed<List<T>>(list, input);
@@ -112,13 +133,17 @@ public interface Parser<T> {
     // create a parser represents syntax of (this, (separator, this)*)
     // if lower less than or equal to 0, lower is ignored.
     // if upper less than or equal to 0, upper is ignored.
-    public default Parser<List<T>> separated(Parser<?> separator, int lower, int upper) {
+    public default Parser<List<T>> separated(DiscardParser separator, int lower, int upper) {
         return separatedMost(separator, upper).map(x -> {
             if (lower > 0 && x.size() < lower) {
                 return null;
             }
             return x;
         });
+    }
+
+    public default Parser<List<T>> separated(DiscardParser separator) {
+        return this.separated(separator, 0, 0);
     }
 
     public default Parser<T> after(java.util.function.Consumer<Parsed<T>> action) {

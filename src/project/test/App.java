@@ -5,20 +5,22 @@ import project.lib.StreamBuffer;
 import project.lib.StreamUtil;
 import project.lib.TransformedInletStream;
 import project.lib.Transformer;
-import project.lib.protocol.Ion;
-import project.lib.protocol.MetaMessage;
-import project.lib.protocol.MetaMessageSerializer;
+import project.lib.protocol.IonSerializer;
 
-import static project.lib.protocol.IonBuilder.assoc;
-
+import static project.lib.protocol.IonBuilder.*;
 import java.io.ByteArrayInputStream;
 import java.util.Arrays;
 
 public class App {
     public static void main(String[] args) throws Exception {
-        final var created = MetaMessage.of("id", Ion.of(assoc("a", "b").assoc("c", assoc("d", "e"))));
-        final var serialized = MetaMessageSerializer.instance.serialize(created);
+        final var created = array().add("v0")
+                .add(mapping().map("k0", mapping().map("k00", "v00").map("k01", "v01")).map("k1",
+                        array().add("").add(array().add("v10").add("v11")).add("v12")).map("k2", "v2"))
+                .add("v1");
+        final var serialized = IonSerializer.instance.serialize(created);
         System.out.println(serialized);
+        final var deserialized = IonSerializer.instance.deserialize(serialized);
+        System.out.println(IonSerializer.instance.serialize(deserialized));
 
         final var byteStream = new ByteArrayInputStream(new byte[] { 0, 1, 2, 3, 4, 5 });
         final var inletStream = InletStream.from(byteStream);

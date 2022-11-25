@@ -1,5 +1,9 @@
 package project.lib.scaffolding.parser;
 
-public class Unit {
-    public static final Unit unit = new Unit();
+public final class Unit {
+    public static final Unit instance = new Unit();
+
+    private Unit() {
+
+    }
 }

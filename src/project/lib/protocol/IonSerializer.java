@@ -1,49 +1,52 @@
 package project.lib.protocol;
 
 import java.io.IOException;
-import java.util.List;
+import java.util.regex.Pattern;
 
-import project.lib.protocol.Ion.Atom;
-import project.lib.protocol.Ion.Mapping;
 import project.lib.scaffolding.collections.HList;
+import project.lib.scaffolding.parser.DiscardParser;
+import project.lib.scaffolding.parser.Parsed;
 import project.lib.scaffolding.parser.Parser;
 import project.lib.scaffolding.parser.Parsers;
 import project.lib.scaffolding.parser.Source;
 
 public class IonSerializer implements StringSerializer<Ion> {
-    private static final Parser<Ion.Atom> atom = Parsers.regex("[^;&\n]+").map(AtomImpl::of);
+    private static final Parser<Ion.Atom> atom = Parsers.regex("[^;&\n]*").map(IonBuilder::atom);
+    private static final DiscardParser semicolon = Parsers.regex(";").discard();
+    private static final DiscardParser ampasand = Parsers.regex("&").discard();
     private static final Parser<String> key = Parsers.regex("[_a-zA-Z0-9]+");
-    private static final Parser<String> colon = Parsers.regex(":");
-    private static final Parser<String> semicolon = Parsers.regex(";");
-    private static final Parser<String> equal = Parsers.regex("=");
-    private static final Parser<String> ampasand = Parsers.regex("&");
-    private static final Parser<AtomRule> atomRule = key.join(equal).join(atom).map(AtomRule::of);
-    private static final Parser<RuleSet> ruleSet = createRuleSet();
-    private static final Parser<Mapping> mapping = ruleSet.map(IonSerializer::mappingOf);
-    private static final Parser<RecRule> recRule = key.join(colon).join(ruleSet).join(semicolon).map(RecRule::of);
-    public static final Parser<Ion> parser = mapping.map(x -> (Ion) x).or(atom.map(x -> (Ion) x));
-
-    public static final IonSerializer instance = new IonSerializer();
-
-    private static Parser<RuleSet> createRuleSet() {
-        final Parser<RecRule> recRule = (input) -> IonSerializer.recRule.parse(input);
-        final var atomOrRec = atomRule.map(x -> (Rule) x).or(recRule.map(x -> (Rule) x));
-        final var separated = atomOrRec.separated(ampasand, 1, 0);
-        return separated.map(RuleSet::of);
-    }
-
-    private static Mapping mappingOf(RuleSet ruleSet) {
-        final var builder = new MappingImpl.Builder();
-        for (final var rule : ruleSet.rules) {
-            if (rule instanceof RecRule r) {
-                builder.add(r.key, mappingOf(r.ruleSet));
-            } else {
-                final var r = (AtomRule) rule;
-                builder.add(r.key, r.atom);
-            }
+    public static final Parser<Ion> literal = IonSerializer::parseLiteral;
+    private static final Parser<HList<String, Ion>> rule = key.join(literal);
+    private static final Parser<Ion.Mapping> mapping = rule.separated(ampasand).map(list -> {
+        final var mapping = IonBuilder.mapping();
+        for (final var rule : list) {
+            mapping.map(rule.rest, rule.head);
         }
-        return builder.build();
+        return mapping;
+    });
+    private static final Parser<Ion.Mapping> mappingLiteral = mapping.join(semicolon);
+    private static final Pattern arrayAtomPattern = Pattern.compile("([^;&\n|:=][^;&\n]*)?");
+    private static final Parser<Ion.Atom> arrayAtom = Parsers.regex(arrayAtomPattern).map(IonBuilder::atom);
+    private static final Parser<Ion> arrayElement = literal.or(arrayAtom.map(x -> (Ion) x));
+    private static final Parser<Ion.Array> arrayLiteral = arrayElement.separated(ampasand).join(semicolon)
+            .map(IonBuilder::array);
+
+    private static Parsed<Ion> parseLiteral(Source input) {
+        if (input.length() <= 0) {
+            return null;
+        }
+        final var head = input.charAt(0);
+        final var rest = input.subSequence(1);
+        return switch (head) {
+            case '|' -> arrayLiteral.parse(rest).map(x -> (Ion) x);
+            case ':' -> mappingLiteral.parse(rest).map(x -> (Ion) x);
+            case '=' -> atom.parse(rest).map(x -> (Ion) x);
+            default -> null;
+        };
     }
+
+    public static final Parser<Ion> parser = literal.or(mapping.map(x -> (Ion) x));
+    public static final IonSerializer instance = new IonSerializer();
 
     @Override
     public Ion deserialize(CharSequence sequence) {
@@ -55,88 +58,63 @@ public class IonSerializer implements StringSerializer<Ion> {
     }
 
     @Override
-    public void serialize(Appendable buffer, Ion value) {
-        try {
-            switch (value.TYPE) {
-                case Ion.ATOM -> {
-                    buffer.append(value.asAtom().text());
-                }
-                case Ion.MAPPING -> {
-                    var noninitial = false;
-                    for (final var entry : value.asMapping().entries()) {
-                        if (noninitial) {
-                            buffer.append('&');
-                        } else {
-                            noninitial = true;
-                        }
-                        final var key = entry.getKey();
-                        final var val = entry.getValue();
-
-                        buffer.append(key);
-                        if (val.TYPE == Ion.ATOM) {
-                            buffer.append('=');
-                            serialize(buffer, val);
-                        } else {
-                            buffer.append(':');
-                            serialize(buffer, val);
-                            buffer.append(';');
-                        }
-                    }
-                }
-            }
-        } catch (IOException e) {
-            throw new IllegalStateException();
+    public void serialize(Appendable buffer, Ion value) throws IOException {
+        switch (value.TYPE) {
+            case Ion.MAPPING -> serializeMapping(buffer, value.asMapping());
+            default -> serializeNonRoot(buffer, value);
         }
     }
 
-}
-
-class RuleSet {
-    public static RuleSet of(List<Rule> rules) {
-        return new RuleSet(rules.toArray(Rule[]::new));
+    private static void serializeNonRoot(Appendable buffer, Ion value) throws IOException {
+        switch (value.TYPE) {
+            case Ion.ATOM -> {
+                buffer.append('=').append(value.asAtom().text());
+            }
+            case Ion.MAPPING -> {
+                buffer.append(':');
+                serializeMapping(buffer, value.asMapping());
+                buffer.append(';');
+            }
+            case Ion.ARRAY -> {
+                final var array = value.asArray();
+                buffer.append('|');
+                var initial = true;
+                for (final var item : array) {
+                    if (initial) {
+                        initial = false;
+                    } else {
+                        buffer.append('&');
+                    }
+                    switch (item.TYPE) {
+                        case Ion.ATOM:
+                            final var atom = item.asAtom();
+                            if (arrayAtomPattern.matcher(atom.text()).matches()) {
+                                buffer.append(atom.text());
+                                break;
+                            }
+                        default:
+                            serializeNonRoot(buffer, item);
+                            break;
+                    }
+                }
+                buffer.append(';');
+            }
+        }
     }
 
-    public final Rule[] rules;
+    private static void serializeMapping(Appendable buffer, Ion.Mapping mapping) throws IOException {
+        var initial = true;
+        for (final var rule : mapping.entries()) {
+            if (initial) {
+                initial = false;
+            } else {
+                buffer.append('&');
+            }
+            final var key = rule.getKey();
+            final var val = rule.getValue();
 
-    private RuleSet(Rule[] rules) {
-        this.rules = rules;
-    }
-}
-
-abstract sealed class Rule permits RecRule, AtomRule {
-    public final String key;
-
-    protected Rule(String key) {
-        this.key = key;
-    }
-}
-
-final class RecRule extends Rule {
-    public static RecRule of(HList<HList<HList<String, String>, RuleSet>, String> list) {
-        final var ruleSet = list.rest.head;
-        final var key = list.rest.rest.rest;
-        return new RecRule(key, ruleSet);
-    }
-
-    public final RuleSet ruleSet;
-
-    private RecRule(String key, RuleSet ruleSet) {
-        super(key);
-        this.ruleSet = ruleSet;
-    }
-}
-
-final class AtomRule extends Rule {
-    public static AtomRule of(HList<HList<String, String>, Atom> list) {
-        final var atom = list.head;
-        final var key = list.rest.rest;
-        return new AtomRule(key, atom);
-    }
-
-    public final Atom atom;
-
-    private AtomRule(String key, Atom atom) {
-        super(key);
-        this.atom = atom;
+            buffer.append(key);
+            serializeNonRoot(buffer, val);
+        }
     }
 }
