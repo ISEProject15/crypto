@@ -3,27 +3,28 @@ package project.lib.protocol;
 import java.io.IOException;
 
 import project.lib.scaffolding.collections.HList;
+import project.lib.scaffolding.parser.DiscardParser;
 import project.lib.scaffolding.parser.Parser;
 import project.lib.scaffolding.parser.Parsers;
 import project.lib.scaffolding.parser.Source;
 
-public class MetaMessageSerializer implements StringSerializer<MetaMessage> {
+public class MetaMessageCodec implements StringCodec<MetaMessage> {
     private static final Parser<String> id = Parsers.regex("[_a-zA-Z][_a-zA-Z0-9]*");
-    private static final Parser<String> at = Parsers.regex("@");
-    private static final Parser<String> LF = Parsers.regex("\n");
-    public static final Parser<MetaMessage> parser = id.join(at).join(IonSerializer.parser).join(LF)
-            .map(MetaMessageSerializer::createMetaMessage);
+    private static final DiscardParser at = Parsers.regex("@").discard();
+    private static final DiscardParser LF = Parsers.regex("\n").discard();
+    public static final Parser<MetaMessage> parser = id.join(at).join(IonCodec.parser).join(LF)
+            .map(MetaMessageCodec::createMetaMessage);
 
-    private static MetaMessage createMetaMessage(HList<HList<HList<String, String>, Ion>, String> list) {
-        final var body = list.rest.head;
-        final var id = list.rest.rest.rest;
+    private static MetaMessage createMetaMessage(HList<String, Ion> list) {
+        final var body = list.head;
+        final var id = list.rest;
         return MetaMessage.of(id, body);
     }
 
-    public static final MetaMessageSerializer instance = new MetaMessageSerializer();
+    public static final MetaMessageCodec instance = new MetaMessageCodec();
 
     @Override
-    public MetaMessage deserialize(CharSequence sequence) {
+    public MetaMessage decode(CharSequence sequence) {
         final var result = parser.parse(Source.from(sequence));
         if (result == null) {
             return null;
@@ -35,10 +36,10 @@ public class MetaMessageSerializer implements StringSerializer<MetaMessage> {
     }
 
     @Override
-    public void serialize(Appendable buffer, MetaMessage value) {
+    public void encode(Appendable buffer, MetaMessage value) {
         try {
             buffer.append(value.identity).append('@');
-            IonSerializer.instance.serialize(buffer, value.body);
+            IonCodec.instance.encode(buffer, value.body);
             buffer.append('\n');
         } catch (IOException e) {
             throw new IllegalStateException();

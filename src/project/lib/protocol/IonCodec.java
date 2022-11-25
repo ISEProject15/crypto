@@ -10,12 +10,12 @@ import project.lib.scaffolding.parser.Parser;
 import project.lib.scaffolding.parser.Parsers;
 import project.lib.scaffolding.parser.Source;
 
-public class IonSerializer implements StringSerializer<Ion> {
+public class IonCodec implements StringCodec<Ion> {
     private static final Parser<Ion.Atom> atom = Parsers.regex("[^;&\n]*").map(IonBuilder::atom);
     private static final DiscardParser semicolon = Parsers.regex(";").discard();
     private static final DiscardParser ampasand = Parsers.regex("&").discard();
     private static final Parser<String> key = Parsers.regex("[_a-zA-Z0-9]+");
-    public static final Parser<Ion> literal = IonSerializer::parseLiteral;
+    public static final Parser<Ion> literal = IonCodec::parseLiteral;
     private static final Parser<HList<String, Ion>> rule = key.join(literal);
     private static final Parser<Ion.Mapping> mapping = rule.separated(ampasand).map(list -> {
         final var mapping = IonBuilder.mapping();
@@ -46,10 +46,10 @@ public class IonSerializer implements StringSerializer<Ion> {
     }
 
     public static final Parser<Ion> parser = literal.or(mapping.map(x -> (Ion) x));
-    public static final IonSerializer instance = new IonSerializer();
+    public static final IonCodec instance = new IonCodec();
 
     @Override
-    public Ion deserialize(CharSequence sequence) {
+    public Ion decode(CharSequence sequence) {
         final var result = parser.parse(Source.from(sequence));
         if (result == null) {
             return null;
@@ -58,21 +58,21 @@ public class IonSerializer implements StringSerializer<Ion> {
     }
 
     @Override
-    public void serialize(Appendable buffer, Ion value) throws IOException {
+    public void encode(Appendable buffer, Ion value) throws IOException {
         switch (value.TYPE) {
-            case Ion.MAPPING -> serializeMapping(buffer, value.asMapping());
-            default -> serializeNonRoot(buffer, value);
+            case Ion.MAPPING -> encodeMapping(buffer, value.asMapping());
+            default -> encodeNonRoot(buffer, value);
         }
     }
 
-    private static void serializeNonRoot(Appendable buffer, Ion value) throws IOException {
+    private static void encodeNonRoot(Appendable buffer, Ion value) throws IOException {
         switch (value.TYPE) {
             case Ion.ATOM -> {
                 buffer.append('=').append(value.asAtom().text());
             }
             case Ion.MAPPING -> {
                 buffer.append(':');
-                serializeMapping(buffer, value.asMapping());
+                encodeMapping(buffer, value.asMapping());
                 buffer.append(';');
             }
             case Ion.ARRAY -> {
@@ -93,7 +93,7 @@ public class IonSerializer implements StringSerializer<Ion> {
                                 break;
                             }
                         default:
-                            serializeNonRoot(buffer, item);
+                            encodeNonRoot(buffer, item);
                             break;
                     }
                 }
@@ -102,7 +102,7 @@ public class IonSerializer implements StringSerializer<Ion> {
         }
     }
 
-    private static void serializeMapping(Appendable buffer, Ion.Mapping mapping) throws IOException {
+    private static void encodeMapping(Appendable buffer, Ion.Mapping mapping) throws IOException {
         var initial = true;
         for (final var rule : mapping.entries()) {
             if (initial) {
@@ -114,7 +114,7 @@ public class IonSerializer implements StringSerializer<Ion> {
             final var val = rule.getValue();
 
             buffer.append(key);
-            serializeNonRoot(buffer, val);
+            encodeNonRoot(buffer, val);
         }
     }
 }

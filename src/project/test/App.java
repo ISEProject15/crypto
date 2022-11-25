@@ -5,7 +5,7 @@ import project.lib.StreamBuffer;
 import project.lib.StreamUtil;
 import project.lib.TransformedInletStream;
 import project.lib.Transformer;
-import project.lib.protocol.IonSerializer;
+import project.lib.protocol.IonCodec;
 
 import static project.lib.protocol.IonBuilder.*;
 import java.io.ByteArrayInputStream;
@@ -17,10 +17,10 @@ public class App {
                 .add(mapping().map("k0", mapping().map("k00", "v00").map("k01", "v01")).map("k1",
                         array().add("").add(array().add("v10").add("v11")).add("v12")).map("k2", "v2"))
                 .add("v1");
-        final var serialized = IonSerializer.instance.serialize(created);
+        final var serialized = IonCodec.instance.encode(created);
         System.out.println(serialized);
-        final var deserialized = IonSerializer.instance.deserialize(serialized);
-        System.out.println(IonSerializer.instance.serialize(deserialized));
+        final var deserialized = IonCodec.instance.decode(serialized);
+        System.out.println(IonCodec.instance.encode(deserialized));
 
         final var byteStream = new ByteArrayInputStream(new byte[] { 0, 1, 2, 3, 4, 5 });
         final var inletStream = InletStream.from(byteStream);
