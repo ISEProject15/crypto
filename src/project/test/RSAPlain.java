@@ -1,7 +1,6 @@
 package project.test;
 
 import java.math.BigInteger;
-import java.util.Arrays;
 import java.util.Random;
 
 import project.lib.StreamUtil;
@@ -45,6 +44,8 @@ abstract class RSAPlain {
             }
         }
         final var secret = exponent.modInverse(phi);
+
+        // TODO: deterministic primaliy test
 
         return RSAKeyBundle.of(modulo, secret, exponent);
     }

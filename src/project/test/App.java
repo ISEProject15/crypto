@@ -10,8 +10,16 @@ public class App {
 
         final var test = BigInteger.valueOf(0xCEF);
         final var bin = test.toByteArray();
+        for (final var b : bin) {
+            System.out.print(Integer.toBinaryString(((int) b) & 0xFF));
+        }
+        System.out.println();
         final var bin1 = new byte[3];
-        System.arraycopy(bin, 0, bin1, bin1.length - bin.length, 2);
+        System.arraycopy(bin, 0, bin1, bin1.length - bin.length, bin.length);
+        for (final var b : bin1) {
+            System.out.print(Integer.toBinaryString(((int) b) & 0xFF));
+        }
+        System.out.println();
 
         System.out.println(test);
         System.out.println(Arrays.toString(bin));
