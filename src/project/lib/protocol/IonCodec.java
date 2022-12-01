@@ -3,6 +3,7 @@ package project.lib.protocol;
 import java.io.IOException;
 import java.util.regex.Pattern;
 
+import project.lib.StringCodec;
 import project.lib.scaffolding.collections.HList;
 import project.lib.scaffolding.parser.DiscardParser;
 import project.lib.scaffolding.parser.Parsed;

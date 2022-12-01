@@ -2,6 +2,8 @@ package project.lib.protocol;
 
 import java.io.IOException;
 
+import project.lib.StringEncoder;
+
 public class Ion2JsonEncoder implements StringEncoder<Ion> {
     public static final Ion2JsonEncoder instance = new Ion2JsonEncoder();
 

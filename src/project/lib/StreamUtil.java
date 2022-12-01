@@ -11,6 +11,5 @@ public class StreamUtil {
 
     public static boolean isLast(int length) {
         return length < 0;
-
     }
 }

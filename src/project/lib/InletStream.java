@@ -12,7 +12,15 @@ public interface InletStream extends Closeable {
 
     // データを受信してdestinationに書き込む．
     // 書き込んだバイト数を返す．ただし，最後のブロックを書き込んだ場合は書き込んだバイト数のnotを返す．
-    public int read(byte[] destination) throws IOException;
+    public int read(byte[] destination, int offset, int length) throws IOException;
+
+    public default int read(byte[] destination, int offset) throws IOException {
+        return this.read(destination, offset, destination.length);
+    }
+
+    public default int read(byte[] destination) throws IOException {
+        return this.read(destination, 0);
+    }
 
     // 次のreadの読み取りで推奨されるdestinationのサイズを返す．
     // -1が返されたとき，推奨されるサイズは未定であることを示す．
@@ -101,24 +109,30 @@ class InputToInletStream implements InletStream {
     }
 
     @Override
-    public int read(byte[] destination) throws IOException {
+    public int read(byte[] destination, int offset, int length) throws IOException {
+        if (offset < 0) {
+            throw new IllegalArgumentException();
+        }
+        if (offset + length > destination.length) {
+            throw new IllegalArgumentException();
+        }
         if (this.buffer == SOURCE_WAS_ENDED) {
             return -1;
         }
-        if (destination.length <= 0) {
+        if (length <= 0) {
             return 0;
         }
         // read buffer to destination
         final var buffered = this.buffer != NO_BYTE_BUFFERED;
         var totalWritten = 0;
         if (buffered) {
-            destination[0] = (byte) this.buffer;
+            destination[offset] = (byte) this.buffer;
             this.buffer = NO_BYTE_BUFFERED;
             totalWritten += 1;
         }
 
         // read source to the rest of destination
-        final var written = this.source.read(destination, totalWritten, destination.length - totalWritten);
+        final var written = this.source.read(destination, totalWritten + offset, destination.length - totalWritten);
         if (written < 0) { // source was ended
             this.buffer = SOURCE_WAS_ENDED;
             return ~totalWritten;

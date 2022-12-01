@@ -4,9 +4,12 @@ import java.lang.reflect.Array;
 
 import project.lib.StreamUtil;
 
-public class SegmentBuffer<T> {
+public class SegmentBuffer<T> extends Sequence<T> {
     public SegmentBuffer(SegmentBufferStrategy strategy, Class<T> cls) {
         if (!cls.isArray()) {
+            throw new IllegalArgumentException();
+        }
+        if (strategy == null) {
             throw new IllegalArgumentException();
         }
         this.bufferCls = cls;
@@ -14,39 +17,50 @@ public class SegmentBuffer<T> {
     }
 
     public SegmentBuffer(Class<T> cls) {
-        this(SegmentBufferStrategy.doublingMin16Strategy, cls);
+        this(SegmentBufferStrategy.defaultStrategy, cls);
     }
 
     private final Class<T> bufferCls;
-    private final SegmentBufferStrategy strategy;
+    public final SegmentBufferStrategy strategy;
     private Segment firstSegment;
     private int firstOffset;
     private Segment lastSegment;
-    private int lastLength;
     private int length;
     private Segment pool;
+    private Segment rental;
 
     public int length() {
         return this.length;
     }
 
     public boolean isEmpty() {
-        return this.length() <= 0;
+        return this.length <= 0;
     }
 
-    public Segment rent(int capacity) {
-        final var segment = tryRent(capacity);
+    // put segment that is greater than capacity into stage
+    public SequenceSegment<T> stage(int capacity) {
+        if (capacity <= 0) {
+            throw new IllegalArgumentException();
+        }
+        final var segment = tryStage(capacity);
         if (segment == null) {
-            return new Segment(this.nextSegmentSize(capacity));
+            final var size = this.strategy.nextSegmentSize(capacity);
+            final var rental = new Segment(size);
+            this.rental = rental;
+            return rental;
         }
         return segment;
     }
 
-    public Segment tryRent(int capacity) {
+    // try put pooled segment that is greater than capacity into stage
+    public SequenceSegment<T> tryStage(int capacity) {
+        if (this.rental != null) {
+            throw new IllegalStateException();
+        }
         Segment prev = null;
         var segment = this.pool;
         while (segment != null) {
-            if (segment.capacity >= capacity) {
+            if (segment.length >= capacity) {
                 break;
             }
             prev = segment;
@@ -61,70 +75,102 @@ public class SegmentBuffer<T> {
         } else {
             prev.next = segment.next;
         }
-
+        this.rental = segment;
+        segment.next = null;
         return segment;
     }
 
-    public void push(Segment segment, int length) {
-        if (this.lastSegment == null) {
-            this.firstSegment = this.lastSegment = segment;
+    // notify how many items written to buffer and clear stage
+    public void notifyWritten(int length) {
+        if (length < 0) {
+            throw new IllegalArgumentException();
+        }
+        final var rental = this.rental;
+        if (rental == null) {
+            throw new IllegalStateException();
+        }
+        if (rental.length < length) {
+            throw new IllegalStateException();
+        }
+        this.rental = null;
+        if (length == 0) {// if no data written, return rental to pool
+            rental.next = this.pool;
+            this.pool = rental;
+            return;
+        }
+        final var minSegmentSize = this.strategy.nextSegmentSize(0);
+        final var rest = rental.length - length;
+        rental.length = length;
+        if (rest >= minSegmentSize) {// segment has enough extra space
+            final var p = new Segment(rental.buffer, length, rest);
+            p.next = this.pool;
+            this.pool = p;
+        }
+
+        if (this.lastSegment == null) {// sequence has no segment
+            this.firstSegment = this.lastSegment = rental;
             this.firstOffset = 0;
         } else {
-            this.lastSegment.next = segment;
-            this.lastSegment = segment;
+            this.lastSegment.next = rental;
+            this.lastSegment = rental;
         }
-        this.lastLength = length;
 
         this.length += length;
     }
 
     public void write(T source, int length) {
+        if (source == null) {
+            throw new IllegalArgumentException();
+        }
         length = StreamUtil.lenof(length);
-        var segment = this.lastSegment;
-        var written = segment.write(source, this.lastLength, length);
-        this.lastLength += written;
+        var written = 0;
 
         while (written < length) {
-            var newSegment = this.tryRent(0);
+            var newSegment = this.tryStage(0);
             final var rest = length - written;
             if (newSegment == null) {
-                newSegment = this.rent(rest);
+                newSegment = this.stage(rest);
             }
             final var w = newSegment.write(source, written, rest);
             written += w;
-            this.push(newSegment, w);
+            this.notifyWritten(w);
         }
         this.length += length;
     }
 
-    public int read(T destination) {
-        final var destinationLength = Array.getLength(destination);
-        final var lastSegment = this.lastSegment;
-        var written = 0;
-        var first = this.firstSegment;
-        var offset = this.firstOffset;
-        var pool = this.pool;
-        while (first != null && written < destinationLength) {
-            final var rest = destinationLength - written;
-            final var length = (first == lastSegment ? this.lastLength : first.capacity) - offset;
-            final var toWrite = Math.min(length, rest);
-            System.arraycopy(first.buffer, offset, destination, written, toWrite);
+    public int read(T destination, int offset, int length) {
+        if (destination == null || offset < 0 || length < 0) {
+            throw new IllegalArgumentException();
+        }
+        if (offset + length > Array.getLength(destination)) {
+            throw new IllegalArgumentException();
+        }
 
-            if (length <= rest) {
-                offset = 0;
-                final var next = first.next;
-                first.next = pool;
-                pool = first;
-                first = next;
+        var written = 0;
+        var segment = this.firstSegment;
+        var segmentOffset = this.firstOffset;
+        var pool = this.pool;
+        while (segment != null && written < length) {
+            final var rest = length - written;
+            final var segmentLength = segment.length - segmentOffset;
+            final var toWrite = Math.min(segmentLength, rest);
+            System.arraycopy(segment.buffer, segmentOffset, destination, written + offset, toWrite);
+
+            if (segmentLength <= rest) {
+                final var next = segment.next;
+                segment.next = pool;
+                pool = segment;
+                segment = next;
+                segmentOffset = next != null ? next.offset : 0;
             } else {
-                offset += toWrite;
+                segmentOffset += toWrite;
             }
 
             written += toWrite;
         }
 
-        this.firstSegment = first;
-        this.firstOffset = offset;
+        this.firstSegment = segment;
+        this.firstOffset = segmentOffset;
         this.pool = pool;
         this.length -= written;
 
@@ -134,68 +180,109 @@ public class SegmentBuffer<T> {
         return written;
     }
 
-    private int nextSegmentSize(int capacity) {
-        final var last = this.lastSegment;
-        final var size = this.strategy.nextSegmentSize(this.length(), last == null ? 0 : last.capacity);
-        return Math.max(capacity, size);
+    public int read(T destination, int offset) {
+        return this.read(destination, offset, Array.getLength(destination));
+    }
+
+    public int read(T destination) {
+        return this.read(destination, 0);
+    }
+
+    // discard buffered items
+    public void discard(final int amount) {
+        if (amount <= 0) {
+            return;
+        }
+        var written = 0;
+        var segment = this.firstSegment;
+        var offset = this.firstOffset;
+        var pool = this.pool;
+        while (segment != null && written < amount) {
+            final var rest = amount - written;
+            final var length = segment.length;
+            final var discarded = Math.min(length, rest);
+            if (length <= rest) {
+                final var next = segment.next;
+                segment.next = pool;
+                pool = segment;
+                segment = next;
+                offset = next != null ? next.offset : 0;
+            } else {
+                offset += discarded;
+            }
+            written += discarded;
+        }
+
+        this.firstSegment = segment;
+        this.firstOffset = offset;
+        this.pool = pool;
+        this.length -= written;
+    }
+
+    public SequenceSegment<T> first() {
+        return this.firstSegment;
+    }
+
+    public SequenceSegment<T> last() {
+        return this.lastSegment;
+    }
+
+    @SuppressWarnings("unchecked")
+    public T toArray() {
+        final var array = (T) Array.newInstance(elementCls(), this.length);
+        var written = 0;
+        var segment = this.firstSegment;
+        while (written < length) {
+            final var len = segment.length();
+            System.arraycopy(segment.buffer, segment.offset(), array, written, len);
+            written += len;
+            segment = segment.next;
+        }
+        return array;
     }
 
     private Class<?> elementCls() {
         return this.bufferCls.componentType();
     }
 
-    @SuppressWarnings("unchecked")
-    public T toArray() {
-        final var array = (T) Array.newInstance(elementCls(), this.length);
-        final var lastSegment = this.lastSegment;
-        var written = 0;
-        var segment = this.firstSegment;
-        var offset = this.firstOffset;
-        while (written < length) {
-            final var len = segment == lastSegment ? this.lastLength : segment.capacity;
-            System.arraycopy(segment.buffer, offset, array, written, len);
-            written += len;
-            segment = segment.next;
-            offset = 0;
-        }
-        return array;
-    }
-
-    public class Segment {
+    private final class Segment extends SequenceSegment<T> {
         @SuppressWarnings("unchecked")
         Segment(int capacity) {
-            this.buffer = (T) Array.newInstance(elementCls(), capacity);
-            this.capacity = capacity;
+            super((T) Array.newInstance(elementCls(), capacity));
+            this.length = capacity;
         }
 
-        Segment(T source, int length) {
-            final T clone = this.cloneBuffer(source);
-            this.capacity = Array.getLength(clone);
-            this.buffer = clone;
+        Segment(T source, int offset, int length) {
+            super(source);
+            this.offset = offset;
+            this.length = length;
         }
 
-        public final int capacity;
-        public final T buffer;
         Segment next;
+        int offset;
+        int length;
 
-        @SuppressWarnings("unchecked")
-        private T cloneBuffer(T src) {
-            try {
-                return (T) bufferCls.getMethod("clone").invoke(src);
-            } catch (Exception e) {
-                throw new UnsupportedOperationException();
-            }
+        @Override
+        public Segment next() {
+            return this.next;
         }
 
-        public int write(T source, int offset, int length) {
-            length = StreamUtil.lenof(length);
-            final var sourceLength = Array.getLength(source);
-            if (length + offset > sourceLength) {
-                throw new IllegalArgumentException();
+        @Override
+        public int offset() {
+            final var affiliation = SegmentBuffer.this;
+            if (this == affiliation.firstSegment) {// if this is rental segment, always not equal to firstSegment
+                return affiliation.firstOffset + this.offset;
             }
-            final var len = Math.min(length, this.capacity);
-            System.arraycopy(source, offset, this.buffer, 0, len);
-            return len;
+            return 0;
+        }
+
+        @Override
+        public int length() {
+            final var affiliation = SegmentBuffer.this;
+            if (this == affiliation.firstSegment) {// if this is rental segment, always not equal to firstSegment
+                return this.length - affiliation.firstOffset;
+            }
+            return this.length;
         }
     }
 }

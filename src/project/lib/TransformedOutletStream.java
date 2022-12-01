@@ -18,11 +18,11 @@ public class TransformedOutletStream implements OutletStream {
         if (this.buffer == null || estimated > this.buffer.length) {
             this.buffer = new byte[Math.max(estimated, source.length)];
         }
-        var written = transformer.transform(source, length, this.buffer);
+        var written = transformer.transform(source, length, this.buffer, 0, this.buffer.length);
         stream.write(this.buffer, written);
         if (length < 0) {// last segment written
             while (written > 0) {// data remaining in transformer
-                written = transformer.transform(source, -1, this.buffer);
+                written = transformer.transform(source, -1, this.buffer, 0, this.buffer.length);
                 stream.write(this.buffer, written);
             }
         }

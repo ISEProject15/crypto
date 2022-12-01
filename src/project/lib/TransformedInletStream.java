@@ -8,10 +8,7 @@ public class TransformedInletStream implements InletStream {
         this.transformer = transformer;
         final var preferred = source.preferredBufferSize();
         if (preferred > 0) {
-            final var estimated = transformer.estimatedOutputSize(preferred);
-            if (estimated > 0) {
-                this.buffer = new byte[estimated];
-            }
+            this.buffer = new byte[preferred];
         }
     }
 
@@ -20,12 +17,16 @@ public class TransformedInletStream implements InletStream {
     private byte[] buffer;
 
     @Override
-    public int read(byte[] destination) throws IOException {
+    public int read(byte[] destination, int offset, int length) throws IOException {
+        if (destination == null || offset < 0 || length < 0 || offset + length > destination.length) {
+            throw new IllegalArgumentException();
+        }
         if (this.buffer == null) {
             this.buffer = new byte[destination.length];
         }
+
         final var bufWritten = this.source.read(this.buffer);
-        return transformer.transform(this.buffer, bufWritten, destination);
+        return transformer.transform(this.buffer, bufWritten, destination, offset, length);
     }
 
     @Override
@@ -33,7 +34,7 @@ public class TransformedInletStream implements InletStream {
         if (this.buffer == null) {
             return -1;
         }
-        return this.buffer.length;
+        return transformer.estimatedOutputSize(this.buffer.length);
     }
 
     @Override

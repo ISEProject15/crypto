@@ -1,4 +1,4 @@
-package project.lib.protocol;
+package project.lib;
 
 import java.io.IOException;
 
