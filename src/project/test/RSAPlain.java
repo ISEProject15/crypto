@@ -1,6 +1,7 @@
 package project.test;
 
 import java.math.BigInteger;
+import java.util.Arrays;
 import java.util.Random;
 
 import project.lib.StreamUtil;
@@ -11,11 +12,11 @@ abstract class RSAPlain {
         // (1 << (modulo + 1)) - 1 does not satisfy restriction
         // block length less than modulo
         final var one = BigInteger.ONE;
-        var len = modulo.bitLength();
+        var len = modulo.bitLength() - 1;
         while (true) {
             // number that filled 1 and its bit length is len - 1
             final var num = one.shiftLeft(len).subtract(one);
-            if (num.compareTo(modulo) == -1) {
+            if (num.compareTo(modulo) < 0) {
                 break;
             }
             len--;
@@ -27,10 +28,25 @@ abstract class RSAPlain {
         return (num + div - 1) / div;
     }
 
+    private static void assertPrime(BigInteger num) {
+        if (!num.testBit(0))// num is even
+            throw new IllegalStateException("num is even");
+        final var bound = num.sqrt();
+        var div = BigInteger.valueOf(3);
+        do {
+            if (num.remainder(div).equals(BigInteger.ZERO)) {
+                throw new IllegalStateException("num is a multiple of " + div.toString());
+            }
+            div = div.add(BigInteger.TWO);
+        } while (div.compareTo(bound) < 0);
+    }
+
     public static RSAKeyBundle generateKey(int k) {
         final var random = new Random();
         final var p = BigInteger.probablePrime(k, random);
         final var q = BigInteger.probablePrime(k, random);
+        assertPrime(p);
+        assertPrime(q);
 
         final var modulo = p.multiply(q);
         final var phi = p.subtract(BigInteger.ONE).multiply(q.subtract(BigInteger.ONE));
@@ -44,8 +60,6 @@ abstract class RSAPlain {
             }
         }
         final var secret = exponent.modInverse(phi);
-
-        // TODO: deterministic primaliy test
 
         return RSAKeyBundle.of(modulo, secret, exponent);
     }
@@ -63,7 +77,7 @@ abstract class RSAPlain {
             this.exponent = exponent;
             this.modulo = modulo;
             final var inputBlockLength = bitInputBlockLength(modulo) / 8;
-            this.outputBlockLength = (modulo.bitLength() + 7) / 8;
+            this.outputBlockLength = ceil(modulo.bitLength(), 8);
             this.buffer = new byte[inputBlockLength];
             this.remaining = 0;
         }
@@ -94,6 +108,7 @@ abstract class RSAPlain {
                 System.arraycopy(source, offset + read, buffer, remaining, len);
                 remaining += len;
                 read += len;
+                Arrays.fill(buffer, remaining, inputBlockLength, (byte) 0);
 
                 final var remain = remaining < inputBlockLength;
                 if (!isLast && remain) {
@@ -104,8 +119,10 @@ abstract class RSAPlain {
                 final var code = plain.modPow(exponent, modulo);
                 // code satisfies 0 <= code < modulo, so bin length is outputBlockLength at most
                 final var bin = code.toByteArray();
+                // bin.length may exceeds inputBlockLength
+                final var l = Math.min(outputBlockLength, bin.length);
+                System.arraycopy(bin, 0, output, written + (outputBlockLength - l), l);
 
-                System.arraycopy(bin, 0, output, written + (outputBlockLength - bin.length), bin.length);
                 written += outputBlockLength;
                 remaining = 0;
 
@@ -124,7 +141,7 @@ abstract class RSAPlain {
         public Decrypter(BigInteger secret, BigInteger modulo) {
             this.secret = secret;
             this.modulo = modulo;
-            final var outputBlockLength = (modulo.bitLength() + 7) / 8;
+            final var outputBlockLength = ceil(modulo.bitLength(), 8);
             this.inputBlockLength = bitInputBlockLength(modulo) / 8;
             this.buffer = new byte[outputBlockLength];
         }
@@ -156,6 +173,7 @@ abstract class RSAPlain {
                 System.arraycopy(source, offset + read, buffer, remaining, len);
                 remaining += len;
                 read += len;
+                Arrays.fill(buffer, remaining, outputBlockLength, (byte) 0);
 
                 final var remain = remaining < outputBlockLength;
                 if (!isLast && remain) {
@@ -165,8 +183,9 @@ abstract class RSAPlain {
                 final var code = new BigInteger(1, buffer);
                 final var plain = code.modPow(secret, modulo);
                 final var bin = plain.toByteArray();
-
-                System.arraycopy(bin, 0, output, written + (inputBlockLength - bin.length), bin.length);
+                // bin.length may exceeds inputBlockLength
+                final var l = Math.min(inputBlockLength, bin.length);
+                System.arraycopy(bin, 0, output, written + (inputBlockLength - l), l);
                 written += inputBlockLength;
                 remaining = 0;
 
