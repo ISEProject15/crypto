@@ -103,7 +103,7 @@ abstract class RSAPlain {
 
             var written = 0;
             var read = 0;
-            while (read < length) {
+            while (true) {
                 final var len = Math.min(length - read, inputBlockLength - remaining);
                 System.arraycopy(source, offset + read, buffer, remaining, len);
                 remaining += len;
@@ -111,7 +111,7 @@ abstract class RSAPlain {
                 Arrays.fill(buffer, remaining, inputBlockLength, (byte) 0);
 
                 final var remain = remaining < inputBlockLength;
-                if (!isLast && remain) {
+                if (remaining == 0 || !isLast && remain) {
                     break;
                 }
 
@@ -168,7 +168,7 @@ abstract class RSAPlain {
 
             var written = 0;
             var read = 0;
-            while (read < length) {
+            while (true) {
                 final var len = Math.min(length - read, outputBlockLength - remaining);
                 System.arraycopy(source, offset + read, buffer, remaining, len);
                 remaining += len;
@@ -176,7 +176,7 @@ abstract class RSAPlain {
                 Arrays.fill(buffer, remaining, outputBlockLength, (byte) 0);
 
                 final var remain = remaining < outputBlockLength;
-                if (!isLast && remain) {
+                if (remaining == 0 || !isLast && remain) {
                     break;
                 }
 
