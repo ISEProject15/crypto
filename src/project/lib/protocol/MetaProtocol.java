@@ -26,7 +26,7 @@ public class MetaProtocol {
         final var reader = StreamReader.create(inlet);
 
         // send available protocol identity list
-        outlet.write(bytes, bytes.length);
+        outlet.write(bytes, 0, bytes.length);
         // receive protocol identity and protocol initialization arguments
         ;
         return null;

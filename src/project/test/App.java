@@ -1,23 +1,30 @@
 package project.test;
 
+import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.InputStreamReader;
 import java.util.Arrays;
+
+import project.lib.InletStream;
+import project.lib.TransformedInletStream;
 
 public class App {
     public static void main(String[] args) throws Exception {
-        final var keyBundle = RSAPlain.generateKey(32);
-        final var encripter = RSAPlain.encripter(keyBundle.exponent, keyBundle.modulo);
-        final var decripter = RSAPlain.decripter(keyBundle.secret, keyBundle.modulo);
-        System.out.println(keyBundle.toString());
-        final var plain = new byte[] { 0, 1, 2, 3, 4, 5, 6, 7, };
-        System.out.println(Arrays.toString(plain));
-        final var code = encripter.transform(plain, 0, ~plain.length);
-        System.out.println(Arrays.toString(code));
-        final var decoded = decripter.transform(code, 0, ~code.length);
-        System.out.println(Arrays.toString(decoded));
-    }
-}
+        final var reader = new BufferedReader(new InputStreamReader(System.in));
 
-abstract class Transformer {
-    // if length < 0, source is last segment and its size is ~length
-    public abstract byte[] transform(byte[] source, int offset, int length);
+        while (true) {
+            final var keyBundle = RSAPlain.generateKey(16);
+            final var encripter = RSAPlain.encripter(keyBundle.exponent, keyBundle.modulo);
+            final var decripter = RSAPlain.decripter(keyBundle.secret, keyBundle.modulo);
+            System.out.println(keyBundle.toString());
+
+            final var input = new ByteArrayInputStream(new byte[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 });
+            final var inlet = new TransformedInletStream(InletStream.from(input), encripter);
+            System.out.println(Arrays.toString(inlet.collect()));
+            final var line = reader.readLine();
+            if (!line.isEmpty()) {
+                break;
+            }
+        }
+    }
 }

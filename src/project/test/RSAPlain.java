@@ -3,12 +3,15 @@ package project.test;
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.Random;
+import static project.lib.scaffolding.debug.BinaryDebug.*;
 
+import project.lib.StreamBuffer;
 import project.lib.StreamUtil;
+import project.lib.Transformer;
 
 abstract class RSAPlain {
 
-    private static int bitInputBlockLength(BigInteger modulo) {
+    private static int bitPlainBlockLength(BigInteger modulo) {
         // (1 << (modulo + 1)) - 1 does not satisfy restriction
         // block length less than modulo
         final var one = BigInteger.ONE;
@@ -28,28 +31,14 @@ abstract class RSAPlain {
         return (num + div - 1) / div;
     }
 
-    private static void assertPrime(BigInteger num) {
-        if (!num.testBit(0))// num is even
-            throw new IllegalStateException("num is even");
-        final var bound = num.sqrt();
-        var div = BigInteger.valueOf(3);
-        do {
-            if (num.remainder(div).equals(BigInteger.ZERO)) {
-                throw new IllegalStateException("num is a multiple of " + div.toString());
-            }
-            div = div.add(BigInteger.TWO);
-        } while (div.compareTo(bound) < 0);
-    }
-
     public static RSAKeyBundle generateKey(int k) {
+        final var one = BigInteger.ONE;
         final var random = new Random();
         final var p = BigInteger.probablePrime(k, random);
         final var q = BigInteger.probablePrime(k, random);
-        assertPrime(p);
-        assertPrime(q);
 
         final var modulo = p.multiply(q);
-        final var phi = p.subtract(BigInteger.ONE).multiply(q.subtract(BigInteger.ONE));
+        final var phi = p.subtract(one).multiply(q.subtract(one));
         final var bitlen = phi.bitLength();
         BigInteger exponent = null;
         while (true) {
@@ -72,130 +61,171 @@ abstract class RSAPlain {
         return new Decrypter(secret, modulo);
     }
 
-    private static class Encrypter extends Transformer {
+    private static class Encrypter implements Transformer {
         public Encrypter(BigInteger exponent, BigInteger modulo) {
             this.exponent = exponent;
             this.modulo = modulo;
-            final var inputBlockLength = bitInputBlockLength(modulo) / 8;
-            this.outputBlockLength = ceil(modulo.bitLength(), 8);
-            this.buffer = new byte[inputBlockLength];
-            this.remaining = 0;
+            final var plainBlockLength = bitPlainBlockLength(modulo) / 8;
+            this.codeBlockLength = ceil(modulo.bitLength(), 8);
+            this.plainBlock = new byte[plainBlockLength];
+            this.buffer = new StreamBuffer();
+            this.blockRemaining = 0;
+            this.ended = false;
         }
 
-        private int remaining;
-        private final byte[] buffer;
-        private final int outputBlockLength;
+        private int blockRemaining;
+        private final byte[] plainBlock;
+        private final int codeBlockLength;
         private final BigInteger exponent, modulo;
+        private final StreamBuffer buffer;
+        private boolean ended;
 
         @Override
-        public byte[] transform(byte[] source, int offset, int sourceLength) {
-            final var buffer = this.buffer;
-            final var inputBlockLength = buffer.length;
-            final var outputBlockLength = this.outputBlockLength;
-            final var isLast = StreamUtil.isLast(sourceLength);
+        public int transform(byte[] source, int sourceOffset, int sourceLength, byte[] destination,
+                int destinationOffset,
+                int destinationLength) {
+            if (!this.ended) {
+                this.writeToStreamingBuffer(source, sourceOffset, sourceLength);
+            }
+            return this.buffer.read(destination, destinationOffset, destinationLength);
+        }
+
+        private void writeToStreamingBuffer(byte[] source, int sourceOffset, int sourceLength) {
+            final var plainBlock = this.plainBlock;
+            final var plainBlockLength = plainBlock.length;
+            final var codeBlockLength = this.codeBlockLength;
+            final var isSourceLast = StreamUtil.isLast(sourceLength);
             final var length = StreamUtil.lenof(sourceLength);
-            var remaining = this.remaining;
-            final var total = length + remaining;
-            final var outputLength = isLast
-                    ? ceil(total, inputBlockLength)
-                    : total / inputBlockLength;
-            final byte[] output = new byte[outputLength * outputBlockLength];
+            this.ended = StreamUtil.isLast(sourceLength);
+            var blockRemaining = this.blockRemaining;
+            final var totalLength = length + blockRemaining;
+            final var outputBlockCount = isSourceLast
+                    ? ceil(totalLength, plainBlockLength)
+                    : totalLength / plainBlockLength;
+            final var segmentLength = outputBlockCount * codeBlockLength;
+            final var segment = this.buffer.stage(segmentLength);
 
             var written = 0;
             var read = 0;
             while (true) {
-                final var len = Math.min(length - read, inputBlockLength - remaining);
-                System.arraycopy(source, offset + read, buffer, remaining, len);
-                remaining += len;
+                final var len = Math.min(length - read, plainBlockLength - blockRemaining);
+                System.arraycopy(source, sourceOffset + read, plainBlock, blockRemaining, len);
+                blockRemaining += len;
                 read += len;
-                Arrays.fill(buffer, remaining, inputBlockLength, (byte) 0);
+                Arrays.fill(plainBlock, blockRemaining, plainBlockLength, (byte) 0);
 
-                final var remain = remaining < inputBlockLength;
-                if (remaining == 0 || !isLast && remain) {
+                final var remain = blockRemaining < plainBlockLength;
+                if (blockRemaining == 0 || !isSourceLast && remain) {
                     break;
                 }
 
-                final var plain = new BigInteger(1, buffer);
+                System.out.println("plain:" + dumpHex(plainBlock));
+                final var plain = new BigInteger(1, plainBlock);
                 final var code = plain.modPow(exponent, modulo);
                 // code satisfies 0 <= code < modulo, so bin length is outputBlockLength at most
                 final var bin = code.toByteArray();
+                System.out.println("code: " + dumpHex(bin));
                 // bin.length may exceeds inputBlockLength
-                final var l = Math.min(outputBlockLength, bin.length);
-                System.arraycopy(bin, 0, output, written + (outputBlockLength - l), l);
+                final var l = Math.min(codeBlockLength, bin.length);
+                final var o = bin.length - l;
+                System.arraycopy(bin, o, segment.buffer,
+                        written + (codeBlockLength - l) + segment.offset(), l);
 
-                written += outputBlockLength;
-                remaining = 0;
+                written += codeBlockLength;
+                blockRemaining = 0;
 
-                if (isLast && remain) {
+                if (isSourceLast && remain) {
                     break;
                 }
             }
 
-            this.remaining = remaining;
-            return output;
+            this.blockRemaining = blockRemaining;
+            this.buffer.notifyWritten(segmentLength);
         }
 
     }
 
-    private static class Decrypter extends Transformer {
+    private static class Decrypter implements Transformer {
         public Decrypter(BigInteger secret, BigInteger modulo) {
             this.secret = secret;
             this.modulo = modulo;
-            final var outputBlockLength = ceil(modulo.bitLength(), 8);
-            this.inputBlockLength = bitInputBlockLength(modulo) / 8;
-            this.buffer = new byte[outputBlockLength];
+            final var codeBlockLength = ceil(modulo.bitLength(), 8);
+            this.plainBlockLength = bitPlainBlockLength(modulo) / 8;
+            this.block = new byte[codeBlockLength];
+            this.buffer = new StreamBuffer();
+            this.ended = false;
         }
 
-        private final int inputBlockLength;
-        private int remaining;
-        private final byte[] buffer;
+        private final int plainBlockLength;
+        private int blockRemaining;
+        private final byte[] block;
         private final BigInteger secret;
         private final BigInteger modulo;
+        private final StreamBuffer buffer;
+        private boolean ended;
 
         @Override
-        public byte[] transform(byte[] source, int offset, int sourceLength) {
-            final var buffer = this.buffer;
-            final var outputBlockLength = buffer.length;
-            final var inputBlockLength = this.inputBlockLength;
-            final var isLast = StreamUtil.isLast(sourceLength);
-            final var length = StreamUtil.lenof(sourceLength);
-            var remaining = this.remaining;
-            final var total = length + remaining;
-            final var outputLength = isLast
-                    ? ceil(total, outputBlockLength)
-                    : total / outputBlockLength;
-            final byte[] output = new byte[outputLength * inputBlockLength];
+        public int estimatedOutputSize(int sourceLength) {
+            return -1;
+        }
 
+        @Override
+        public int transform(byte[] source, int sourceOffset, int sourceLength, byte[] destination,
+                int destinationOffset, int destinationLength) {
+            if (!this.ended) {
+                this.writeToStreamingBuffer(source, sourceOffset, sourceLength);
+            }
+            return this.buffer.read(destination, destinationOffset, destinationLength);
+        }
+
+        private void writeToStreamingBuffer(byte[] source, int offset, int sourceLength) {
+            final var block = this.block;
+            final var codeBlockLength = block.length;
+            final var plainBlockLength = this.plainBlockLength;
+            final var isSourceLast = StreamUtil.isLast(sourceLength);
+            final var length = StreamUtil.lenof(sourceLength);
+            var blockRemaining = this.blockRemaining;
+            final var total = length + blockRemaining;
+            final var outputLength = isSourceLast
+                    ? ceil(total, codeBlockLength)
+                    : total / codeBlockLength;
+            final var segmentLength = outputLength * plainBlockLength;
+            final var segment = this.buffer.stage(segmentLength);
+            this.ended = StreamUtil.isLast(sourceLength);
             var written = 0;
             var read = 0;
             while (true) {
-                final var len = Math.min(length - read, outputBlockLength - remaining);
-                System.arraycopy(source, offset + read, buffer, remaining, len);
-                remaining += len;
+                final var len = Math.min(length - read, codeBlockLength - blockRemaining);
+                System.arraycopy(source, offset + read, block, blockRemaining, len);
+                blockRemaining += len;
                 read += len;
-                Arrays.fill(buffer, remaining, outputBlockLength, (byte) 0);
+                Arrays.fill(block, blockRemaining, codeBlockLength, (byte) 0);
 
-                final var remain = remaining < outputBlockLength;
-                if (remaining == 0 || !isLast && remain) {
+                final var remain = blockRemaining < codeBlockLength;
+                if (blockRemaining == 0 || !isSourceLast && remain) {
                     break;
                 }
 
-                final var code = new BigInteger(1, buffer);
+                System.out.println("code: " + dumpHex(block));
+                final var code = new BigInteger(1, block);
                 final var plain = code.modPow(secret, modulo);
                 final var bin = plain.toByteArray();
-                // bin.length may exceeds inputBlockLength
-                final var l = Math.min(inputBlockLength, bin.length);
-                System.arraycopy(bin, 0, output, written + (inputBlockLength - l), l);
-                written += inputBlockLength;
-                remaining = 0;
+                System.out.println("plain:" + dumpHex(bin));
+                // bin.length may differ from inputBlockLength
 
-                if (isLast && remain) {
+                final var l = Math.min(plainBlockLength, bin.length);
+                final var o = bin.length - l;
+                System.arraycopy(bin, o, segment.buffer, written + (plainBlockLength - l) + segment.offset(), l);
+                written += plainBlockLength;
+                blockRemaining = 0;
+
+                if (isSourceLast && remain) {
                     break;
                 }
             }
 
-            this.remaining = remaining;
-            return output;
+            this.buffer.notifyWritten(segmentLength);
+            this.blockRemaining = blockRemaining;
         }
 
     }

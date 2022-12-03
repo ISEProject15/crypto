@@ -26,7 +26,7 @@ public class TransformedInletStream implements InletStream {
         }
 
         final var bufWritten = this.source.read(this.buffer);
-        return transformer.transform(this.buffer, bufWritten, destination, offset, length);
+        return transformer.transform(this.buffer, 0, bufWritten, destination, offset, length);
     }
 
     @Override

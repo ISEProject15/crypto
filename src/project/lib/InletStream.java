@@ -28,6 +28,22 @@ public interface InletStream extends Closeable {
         return -1;
     }
 
+    public default byte[] collect() throws IOException {
+        final var buffer = new StreamBuffer();
+
+        while (true) {
+            final var segment = buffer.stage(this.preferredBufferSize());
+            final var written = this.read(segment.buffer, segment.offset(), segment.length());
+            buffer.notifyWritten(StreamUtil.lenof(written));
+            if (StreamUtil.isLast(written)) {
+                break;
+            }
+        }
+        final var collected = buffer.toArray();
+        buffer.close();
+        return collected;
+    }
+
     public default InputStream toInputStream() {
         return new InletToInputStream(this);
     }

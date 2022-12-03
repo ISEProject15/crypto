@@ -39,9 +39,7 @@ public class SegmentBuffer<T> extends Sequence<T> {
 
     // put segment that is greater than capacity into stage
     public SequenceSegment<T> stage(int capacity) {
-        if (capacity <= 0) {
-            throw new IllegalArgumentException();
-        }
+        capacity = Math.max(capacity, this.strategy.nextSegmentSize(0));
         final var segment = tryStage(capacity);
         if (segment == null) {
             final var size = this.strategy.nextSegmentSize(capacity);
@@ -118,7 +116,7 @@ public class SegmentBuffer<T> extends Sequence<T> {
         this.length += length;
     }
 
-    public void write(T source, int length) {
+    public void write(T source, int offset, int length) {
         if (source == null) {
             throw new IllegalArgumentException();
         }
@@ -131,7 +129,7 @@ public class SegmentBuffer<T> extends Sequence<T> {
             if (newSegment == null) {
                 newSegment = this.stage(rest);
             }
-            final var w = newSegment.write(source, written, rest);
+            final var w = newSegment.write(source, written + offset, rest);
             written += w;
             this.notifyWritten(w);
         }
@@ -189,7 +187,7 @@ public class SegmentBuffer<T> extends Sequence<T> {
     }
 
     // discard buffered items
-    public void discard(final int amount) {
+    public void discard(int amount) {
         if (amount <= 0) {
             return;
         }
