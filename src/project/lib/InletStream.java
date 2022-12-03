@@ -10,6 +10,20 @@ public interface InletStream extends Closeable {
         return new InputToInletStream(source);
     }
 
+    public static InletStream from(byte[] source, int offset, int length) {
+        final var arr = new byte[length];
+        System.arraycopy(source, offset, arr, 0, length);
+        return new ByteArrayInletStream(arr, 0, arr.length);
+    }
+
+    public static InletStream from(byte[] source, int offset) {
+        return from(source, offset, source.length);
+    }
+
+    public static InletStream from(byte[] source) {
+        return from(source, 0);
+    }
+
     // データを受信してdestinationに書き込む．
     // 書き込んだバイト数を返す．ただし，最後のブロックを書き込んだ場合は書き込んだバイト数のnotを返す．
     public int read(byte[] destination, int offset, int length) throws IOException;
@@ -47,6 +61,36 @@ public interface InletStream extends Closeable {
     public default InputStream toInputStream() {
         return new InletToInputStream(this);
     }
+}
+
+class ByteArrayInletStream implements InletStream {
+    ByteArrayInletStream(byte[] source, int offset, int length) {
+        this.source = source;
+        this.bound = offset + StreamUtil.lenof(length);
+        this.offset = offset;
+    }
+
+    private int offset;
+    private final int bound;
+    private final byte[] source;
+
+    @Override
+    public void close() throws IOException {
+
+    }
+
+    @Override
+    public int read(byte[] destination, int offset, int length) throws IOException {
+        final var rest = this.bound - this.offset;
+        final var len = Math.min(rest, length);
+        System.arraycopy(source, this.offset, destination, offset, len);
+        this.offset += len;
+        if (rest <= len) {
+            return ~len;
+        }
+        return len;
+    }
+
 }
 
 class InletToInputStream extends InputStream {
