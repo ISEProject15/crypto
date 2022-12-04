@@ -3,7 +3,8 @@ package project.lib.scaffolding.debug;
 public class BinaryDebug {
     public static String dumpHex(byte[] bin, int offset, int length) {
         final var builder = new StringBuilder(length);
-        for (final var b : bin) {
+        for (var i = 0; i < length; ++i) {
+            final var b = bin[offset + i];
             builder.append(hexL4(b)).append(hexL4(b >>> 4));
         }
         return builder.toString();

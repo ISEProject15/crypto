@@ -8,7 +8,7 @@ public interface Cipher {
 
     // 引数を元にencrypterとdecrypterの初期化に必要なデータを生成する
     // argsがnullの時はデフォルトの引数で初期化する
-    public CipherInitInfo create(Ion args);
+    public CipherArgs create(Ion args);
 
     public Transformer encrypter(Ion encryptionKey);
 

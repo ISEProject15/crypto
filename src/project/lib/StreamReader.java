@@ -6,6 +6,7 @@ import java.io.IOException;
 
 import project.lib.scaffolding.collections.SegmentBufferStrategy;
 
+//WARN: imcomplete
 public class StreamReader {
     public static StreamReader create(InletStream inlet) {
         return new StreamReader(SegmentBufferStrategy.defaultStrategy, inlet);

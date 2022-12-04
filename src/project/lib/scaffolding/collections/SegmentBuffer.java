@@ -4,6 +4,7 @@ import java.lang.reflect.Array;
 
 import project.lib.StreamUtil;
 
+//FIXME: length mismatch 
 public class SegmentBuffer<T> extends Sequence<T> {
     public SegmentBuffer(SegmentBufferStrategy strategy, Class<T> cls) {
         if (!cls.isArray()) {
@@ -62,6 +63,7 @@ public class SegmentBuffer<T> extends Sequence<T> {
                 break;
             }
             prev = segment;
+            segment = segment.next;
         }
 
         if (segment == null) {
@@ -133,7 +135,6 @@ public class SegmentBuffer<T> extends Sequence<T> {
             written += w;
             this.notifyWritten(w);
         }
-        this.length += length;
     }
 
     public int read(T destination, int offset, int length) {
@@ -148,9 +149,11 @@ public class SegmentBuffer<T> extends Sequence<T> {
         var segment = this.firstSegment;
         var segmentOffset = this.firstOffset;
         var pool = this.pool;
+        System.out.println(segment);
         while (segment != null && written < length) {
             final var rest = length - written;
             final var segmentLength = segment.length - segmentOffset;
+
             final var toWrite = Math.min(segmentLength, rest);
             System.arraycopy(segment.buffer, segmentOffset, destination, written + offset, toWrite);
 
