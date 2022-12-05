@@ -24,14 +24,36 @@ public class SegmentBuffer<T> extends Sequence<T> {
     private final Class<T> bufferCls;
     public final SegmentBufferStrategy strategy;
     private Segment firstSegment;
-    private int firstOffset;
+    private int firstIndex;
     private Segment lastSegment;
+    private int lastIndex;
     private int length;
     private Segment pool;
     private Segment rental;
 
+    @Override
     public int length() {
         return this.length;
+    }
+
+    @Override
+    public SequenceSegment<T> first() {
+        return this.firstSegment;
+    }
+
+    @Override
+    public SequenceSegment<T> last() {
+        return this.lastSegment;
+    }
+
+    @Override
+    public int firstIndex() {
+        return this.firstIndex;
+    }
+
+    @Override
+    public int lastIndex() {
+        return this.lastIndex;
     }
 
     public boolean isEmpty() {
@@ -109,7 +131,7 @@ public class SegmentBuffer<T> extends Sequence<T> {
 
         if (this.lastSegment == null) {// sequence has no segment
             this.firstSegment = this.lastSegment = rental;
-            this.firstOffset = 0;
+            this.firstIndex = 0;
         } else {
             this.lastSegment.next = rental;
             this.lastSegment = rental;
@@ -147,7 +169,7 @@ public class SegmentBuffer<T> extends Sequence<T> {
 
         var written = 0;
         var segment = this.firstSegment;
-        var segmentOffset = this.firstOffset;
+        var segmentOffset = this.firstIndex;
         var pool = this.pool;
         System.out.println(segment);
         while (segment != null && written < length) {
@@ -171,7 +193,7 @@ public class SegmentBuffer<T> extends Sequence<T> {
         }
 
         this.firstSegment = segment;
-        this.firstOffset = segmentOffset;
+        this.firstIndex = segmentOffset;
         this.pool = pool;
         this.length -= written;
 
@@ -196,7 +218,7 @@ public class SegmentBuffer<T> extends Sequence<T> {
         }
         var written = 0;
         var segment = this.firstSegment;
-        var offset = this.firstOffset;
+        var offset = this.firstIndex;
         var pool = this.pool;
         while (segment != null && written < amount) {
             final var rest = amount - written;
@@ -215,17 +237,9 @@ public class SegmentBuffer<T> extends Sequence<T> {
         }
 
         this.firstSegment = segment;
-        this.firstOffset = offset;
+        this.firstIndex = offset;
         this.pool = pool;
         this.length -= written;
-    }
-
-    public SequenceSegment<T> first() {
-        return this.firstSegment;
-    }
-
-    public SequenceSegment<T> last() {
-        return this.lastSegment;
     }
 
     @SuppressWarnings("unchecked")
@@ -270,19 +284,11 @@ public class SegmentBuffer<T> extends Sequence<T> {
 
         @Override
         public int offset() {
-            final var affiliation = SegmentBuffer.this;
-            if (this == affiliation.firstSegment) {// if this is rental segment, always not equal to firstSegment
-                return affiliation.firstOffset + this.offset;
-            }
-            return 0;
+            return this.offset;
         }
 
         @Override
         public int length() {
-            final var affiliation = SegmentBuffer.this;
-            if (this == affiliation.firstSegment) {// if this is rental segment, always not equal to firstSegment
-                return this.length - affiliation.firstOffset;
-            }
             return this.length;
         }
     }

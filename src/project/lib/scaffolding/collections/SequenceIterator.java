@@ -1,0 +1,71 @@
+package project.lib.scaffolding.collections;
+
+public final class SequenceIterator<T> {
+    public static <T> SequenceIterator<T> from(Sequence<T> sequence) {
+        return new SequenceIterator<>(sequence);
+    }
+
+    private SequenceIterator(Sequence<T> sequence) {
+        this.firstSegment = sequence.first();
+        this.lastSegment = sequence.last();
+        this.firstIndex = sequence.firstIndex();
+        this.lastIndex = sequence.lastIndex();
+    }
+
+    private final SequenceSegment<T> firstSegment;
+    private final SequenceSegment<T> lastSegment;
+    private final int firstIndex;
+    private final int lastIndex;
+
+    private SequenceSegment<T> segment;
+    private int offset;
+    private int length;
+
+    public T currentBuffer() {
+        if (this.segment == null) {
+            throw new IllegalStateException();
+        }
+        return segment.buffer;
+    }
+
+    public int currentOffset() {
+        if (this.segment == null) {
+            throw new IllegalStateException();
+        }
+        return segment.offset() + this.offset;
+    }
+
+    public int currentLength() {
+        if (this.segment == null) {
+            throw new IllegalStateException();
+        }
+
+        return this.length;
+    }
+
+    public boolean next() {
+        final var last = this.lastSegment;
+        if (this.segment == null) {// first call
+            final var first = this.firstSegment;
+            if (first == null) {
+                return false;
+            }
+            this.segment = first;
+            this.offset = firstIndex;
+            this.length = first == last ? this.lastIndex : first.length();
+            return true;
+        }
+
+        final var next = this.segment.next();
+
+        if (next == null) {
+            return false;
+        }
+        this.segment = next;
+        // next is absolutely not first segment, so we not have to check first index
+        this.offset = next.offset();
+        this.length = next == last ? this.lastIndex : next.length();
+        return true;
+    }
+
+}
