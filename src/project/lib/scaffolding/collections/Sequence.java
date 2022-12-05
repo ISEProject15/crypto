@@ -18,4 +18,8 @@ public abstract class Sequence<T> {
     public boolean isEmpty() {
         return this.length() == 0;
     }
+
+    public SequenceIterator<T> iterator() {
+        return SequenceIterator.from(this);
+    }
 }
