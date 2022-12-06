@@ -1,8 +1,10 @@
 package project.lib.scaffolding.collections;
 
 import java.lang.reflect.Array;
+import java.util.Arrays;
 
 import project.lib.StreamUtil;
+import project.lib.scaffolding.debug.BinaryDebug;
 
 public class SegmentBuffer<T> extends Sequence<T> {
     public SegmentBuffer(SegmentBufferStrategy strategy, Class<T> cls) {
@@ -26,6 +28,7 @@ public class SegmentBuffer<T> extends Sequence<T> {
     private int length;
 
     private final Writer writer;
+
     public BufferWriter<T> writer() {
         return this.writer;
     }
@@ -87,7 +90,7 @@ public class SegmentBuffer<T> extends Sequence<T> {
         var segment = this.firstSegment;
         var segmentOffset = this.firstIndex;
         final var writer = this.writer;
-        System.out.println(segment);
+
         while (segment != null && written < length) {
             final var rest = length - written;
             final var segmentLength = segment == lastSegment ? this.lastIndex : segment.length;
@@ -222,11 +225,11 @@ public class SegmentBuffer<T> extends Sequence<T> {
             if (staged == null) {
                 throw new IllegalStateException();
             }
+            this.staged = null;
             if (staged.length < length) {
                 throw new IllegalStateException();
             }
-            this.staged = null;
-            if (length == 0) {// if no data written, return rental to pool
+            if (length == 0) {// if no data written, return staged to pool
                 staged.next = this.pool;
                 this.pool = staged;
                 return;
@@ -262,11 +265,17 @@ public class SegmentBuffer<T> extends Sequence<T> {
 
         @Override
         public int stagedLength() {
+            if (this.staged == null) {
+                throw new IllegalStateException();
+            }
             return this.staged.length;
         }
 
         @Override
         public int stagedOffset() {
+            if (this.staged == null) {
+                throw new IllegalStateException();
+            }
             return this.staged.offset;
         }
 
@@ -302,6 +311,17 @@ public class SegmentBuffer<T> extends Sequence<T> {
         @Override
         public int length() {
             return this.length;
+        }
+
+        public int write(T source, int offset, int length) {
+            length = StreamUtil.lenof(length);
+            final var sourceLength = Array.getLength(source);
+            if (length + offset > sourceLength) {
+                throw new IllegalArgumentException();
+            }
+            final var len = Math.min(length, this.length);
+            System.arraycopy(source, offset, this.buffer, this.offset, len);
+            return len;
         }
     }
 }

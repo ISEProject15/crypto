@@ -4,13 +4,24 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 
 import project.lib.InletStream;
+import project.lib.StreamBuffer;
 import project.lib.TransformedInletStream;
 import project.lib.crypto.algorithm.RSAPlain;
 
 import static project.lib.scaffolding.debug.BinaryDebug.*;
 
 public class App {
+
     public static void main(String[] args) throws Exception {
+        final var buffer = new StreamBuffer();
+        System.out.println(dumpHex(buffer));
+        buffer.write(new byte[] { 0, 1, 2, 3, 4 }, 0, 5);
+        System.out.println(dumpHex(buffer));
+        buffer.write(new byte[] { 0, 1, 2, 3, 4 }, 0, 5);
+        System.out.println(dumpHex(buffer));
+
+        buffer.close();
+
         final var reader = new BufferedReader(new InputStreamReader(System.in));
 
         while (true) {

@@ -51,10 +51,11 @@ public interface InletStream extends Closeable {
         while (true) {
             writer.stage(this.preferredBufferSize());
             final var written = this.read(writer.stagedBuffer(), writer.stagedOffset(), writer.stagedLength());
-            writer.finish(StreamUtil.lenof(written));
             System.out
                     .println("collect step:"
                             + BinaryDebug.dumpHex(writer.stagedBuffer(), writer.stagedOffset(), writer.stagedLength()));
+            writer.finish(StreamUtil.lenof(written));
+
             System.in.read();
             if (StreamUtil.isLast(written)) {
                 break;

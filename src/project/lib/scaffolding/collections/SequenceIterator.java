@@ -32,7 +32,7 @@ public final class SequenceIterator<T> {
         if (this.segment == null) {
             throw new IllegalStateException();
         }
-        return segment.offset() + this.offset;
+        return this.offset;
     }
 
     public int currentLength() {
@@ -51,7 +51,7 @@ public final class SequenceIterator<T> {
                 return false;
             }
             this.segment = first;
-            this.offset = firstIndex;
+            this.offset = firstIndex + first.offset();
             this.length = first == last ? this.lastIndex : first.length();
             return true;
         }
