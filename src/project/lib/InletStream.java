@@ -46,13 +46,15 @@ public interface InletStream extends Closeable {
 
     public default byte[] collect() throws IOException {
         final var buffer = new StreamBuffer();
+        final var writer = buffer.writer();
 
         while (true) {
-            final var segment = buffer.stage(this.preferredBufferSize());
-            final var written = this.read(segment.buffer, segment.offset(), segment.length());
-            buffer.notifyWritten(StreamUtil.lenof(written));
+            writer.stage(this.preferredBufferSize());
+            final var written = this.read(writer.stagedBuffer(), writer.stagedOffset(), writer.stagedLength());
+            writer.finish(StreamUtil.lenof(written));
             System.out
-                    .println("collect step:" + BinaryDebug.dumpHex(segment.buffer, segment.offset(), segment.length()));
+                    .println("collect step:"
+                            + BinaryDebug.dumpHex(writer.stagedBuffer(), writer.stagedOffset(), writer.stagedLength()));
             System.in.read();
             if (StreamUtil.isLast(written)) {
                 break;

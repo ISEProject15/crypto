@@ -113,7 +113,8 @@ public class RSAPlain {
                     ? ceil(totalLength, plainBlockLength)
                     : totalLength / plainBlockLength;
             final var segmentLength = outputBlockCount * codeBlockLength;
-            final var segment = this.buffer.stage(segmentLength);
+            final var writer = this.buffer.writer();
+            writer.stage(segmentLength);
 
             var written = 0;
             var read = 0;
@@ -138,8 +139,8 @@ public class RSAPlain {
                 // bin.length may exceeds inputBlockLength
                 final var l = Math.min(codeBlockLength, bin.length);
                 final var o = bin.length - l;
-                System.arraycopy(bin, o, segment.buffer,
-                        written + (codeBlockLength - l) + segment.offset(), l);
+                System.arraycopy(bin, o, writer.stagedBuffer(),
+                        written + (codeBlockLength - l) + writer.stagedOffset(), l);
 
                 written += codeBlockLength;
                 blockRemaining = 0;
@@ -150,7 +151,7 @@ public class RSAPlain {
             }
 
             this.blockRemaining = blockRemaining;
-            this.buffer.notifyWritten(segmentLength);
+            writer.finish(segmentLength);
         }
 
     }
@@ -217,7 +218,8 @@ public class RSAPlain {
                     ? ceil(total, codeBlockLength)
                     : total / codeBlockLength;
             final var segmentLength = outputLength * plainBlockLength;
-            final var segment = this.buffer.stage(segmentLength);
+            final var writer = this.buffer.writer();
+            writer.stage(segmentLength);
             var written = 0;
             var read = 0;
 
@@ -242,7 +244,8 @@ public class RSAPlain {
 
                 final var l = Math.min(plainBlockLength, bin.length);
                 final var o = bin.length - l;
-                System.arraycopy(bin, o, segment.buffer, written + (plainBlockLength - l) + segment.offset(), l);
+                System.arraycopy(bin, o, writer.stagedBuffer(),
+                        written + (plainBlockLength - l) + writer.stagedOffset(), l);
                 written += plainBlockLength;
                 blockRemaining = 0;
 
@@ -250,7 +253,7 @@ public class RSAPlain {
                     break;
                 }
             }
-            this.buffer.notifyWritten(segmentLength);
+            writer.finish(segmentLength);
             this.blockRemaining = blockRemaining;
         }
 

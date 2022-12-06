@@ -14,10 +14,12 @@ public abstract class Sequence<T> {
 
     public abstract SequenceSegment<T> firstSegment();
 
+    // inclusive
     public abstract int firstIndex();
 
     public abstract SequenceSegment<T> lastSegment();
 
+    // exclusive
     public abstract int lastIndex();
 
     public abstract int length();

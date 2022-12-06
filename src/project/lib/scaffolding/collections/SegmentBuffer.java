@@ -4,7 +4,6 @@ import java.lang.reflect.Array;
 
 import project.lib.StreamUtil;
 
-//FIXME: length mismatch 
 public class SegmentBuffer<T> extends Sequence<T> {
     public SegmentBuffer(SegmentBufferStrategy strategy, Class<T> cls) {
         super(cls);
@@ -12,6 +11,7 @@ public class SegmentBuffer<T> extends Sequence<T> {
             throw new IllegalArgumentException();
         }
         this.strategy = strategy;
+        this.writer = new Writer();
     }
 
     public SegmentBuffer(Class<T> cls) {
@@ -24,8 +24,11 @@ public class SegmentBuffer<T> extends Sequence<T> {
     private Segment lastSegment;
     private int lastIndex;
     private int length;
-    private Segment pool;
-    private Segment rental;
+
+    private final Writer writer;
+    public BufferWriter<T> writer() {
+        return this.writer;
+    }
 
     @Override
     public int length() {
@@ -52,102 +55,22 @@ public class SegmentBuffer<T> extends Sequence<T> {
         return this.lastIndex;
     }
 
-    // put segment that is greater than capacity into stage
-    public SequenceSegment<T> stage(int capacity) {
-        capacity = Math.max(capacity, this.strategy.nextSegmentSize(0));
-        final var segment = tryStage(capacity);
-        if (segment == null) {
-            final var size = this.strategy.nextSegmentSize(capacity);
-            final var rental = new Segment(size);
-            this.rental = rental;
-            return rental;
-        }
-        return segment;
-    }
-
-    // try put pooled segment that is greater than capacity into stage
-    public SequenceSegment<T> tryStage(int capacity) {
-        if (this.rental != null) {
-            throw new IllegalStateException();
-        }
-        Segment prev = null;
-        var segment = this.pool;
-        while (segment != null) {
-            if (segment.length >= capacity) {
-                break;
-            }
-            prev = segment;
-            segment = segment.next;
-        }
-
-        if (segment == null) {
-            return null;
-        }
-
-        if (prev == null) {
-            this.pool = segment.next;
-        } else {
-            prev.next = segment.next;
-        }
-        this.rental = segment;
-        segment.next = null;
-        return segment;
-    }
-
-    // notify how many items written to buffer and clear stage
-    public void notifyWritten(int length) {
-        if (length < 0) {
-            throw new IllegalArgumentException();
-        }
-        final var rental = this.rental;
-        if (rental == null) {
-            throw new IllegalStateException();
-        }
-        if (rental.length < length) {
-            throw new IllegalStateException();
-        }
-        this.rental = null;
-        if (length == 0) {// if no data written, return rental to pool
-            rental.next = this.pool;
-            this.pool = rental;
-            return;
-        }
-        final var minSegmentSize = this.strategy.nextSegmentSize(0);
-        final var rest = rental.length - length;
-        rental.length = length;
-        if (rest >= minSegmentSize) {// segment has enough extra space
-            final var p = new Segment(rental.buffer, length, rest);
-            p.next = this.pool;
-            this.pool = p;
-        }
-
-        if (this.lastSegment == null) {// sequence has no segment
-            this.firstSegment = this.lastSegment = rental;
-            this.firstIndex = 0;
-        } else {
-            this.lastSegment.next = rental;
-            this.lastSegment = rental;
-        }
-
-        this.length += length;
-    }
-
     public void write(T source, int offset, int length) {
         if (source == null) {
             throw new IllegalArgumentException();
         }
         length = StreamUtil.lenof(length);
         var written = 0;
-
+        final var writer = this.writer;
         while (written < length) {
-            var newSegment = this.tryStage(0);
+
             final var rest = length - written;
-            if (newSegment == null) {
-                newSegment = this.stage(rest);
+            if (!writer.tryStage(0)) {
+                writer.stage(rest);
             }
-            final var w = newSegment.write(source, written + offset, rest);
+            final var w = writer.staged.write(source, written + offset, rest);
             written += w;
-            this.notifyWritten(w);
+            writer.finish(w);
         }
     }
 
@@ -163,7 +86,7 @@ public class SegmentBuffer<T> extends Sequence<T> {
         var written = 0;
         var segment = this.firstSegment;
         var segmentOffset = this.firstIndex;
-        var pool = this.pool;
+        final var writer = this.writer;
         System.out.println(segment);
         while (segment != null && written < length) {
             final var rest = length - written;
@@ -174,8 +97,7 @@ public class SegmentBuffer<T> extends Sequence<T> {
 
             if (segmentLength <= rest) {
                 final var next = segment.next;
-                segment.next = pool;
-                pool = segment;
+                writer.pushPool(segment);
                 segment = next;
                 segmentOffset = 0;
             } else {
@@ -187,7 +109,9 @@ public class SegmentBuffer<T> extends Sequence<T> {
 
         this.firstSegment = segment;
         this.firstIndex = segmentOffset;
-        this.pool = pool;
+        if (segment == null) {// sequence is empty
+            this.lastSegment = null;
+        }
         this.length -= written;
 
         if (this.isEmpty()) {
@@ -209,30 +133,32 @@ public class SegmentBuffer<T> extends Sequence<T> {
         if (amount <= 0) {
             return;
         }
-        var written = 0;
+        final var lastSegment = this.lastSegment;
+        var discarded = 0;
         var segment = this.firstSegment;
         var offset = this.firstIndex;
-        var pool = this.pool;
-        while (segment != null && written < amount) {
-            final var rest = amount - written;
-            final var length = segment.length;
-            final var discarded = Math.min(length, rest);
+        final var writer = this.writer;
+        while (segment != null && discarded < amount) {
+            final var rest = amount - discarded;
+            final var length = segment == lastSegment ? this.lastIndex : segment.length;
+            final var toDiscard = Math.min(length, rest);
             if (length <= rest) {
                 final var next = segment.next;
-                segment.next = pool;
-                pool = segment;
+                writer.pushPool(segment);
                 segment = next;
-                offset = next != null ? next.offset : 0;
+                offset = 0;
             } else {
-                offset += discarded;
+                offset += toDiscard;
             }
-            written += discarded;
+            discarded += toDiscard;
         }
 
         this.firstSegment = segment;
         this.firstIndex = offset;
-        this.pool = pool;
-        this.length -= written;
+        if (segment == null) {
+            this.lastSegment = null;
+        }
+        this.length -= discarded;
     }
 
     private Class<?> elementCls() {
@@ -240,41 +166,108 @@ public class SegmentBuffer<T> extends Sequence<T> {
     }
 
     private final class Writer implements BufferWriter<T> {
+        private Segment pool;
+        private Segment staged;
 
-        @Override
-        public void finish(int written) {
-            // TODO Auto-generated method stub
+        public void pushPool(Segment segment) {
+            segment.next = this.pool;
+            this.pool = segment;
+        }
 
+        // put segment that is greater than capacity into stage
+        public void stage(int capacity) {
+            capacity = Math.max(capacity, strategy.nextSegmentSize(0));
+            if (!this.tryStage(capacity)) {
+                final var size = strategy.nextSegmentSize(capacity);
+                final var staged = new Segment(size);
+                this.staged = staged;
+            }
+        }
+
+        // try put pooled segment that is greater than capacity into stage
+        public boolean tryStage(int capacity) {
+            if (this.staged != null) {
+                throw new IllegalStateException();
+            }
+            Segment prev = null;
+            var segment = this.pool;
+            while (segment != null) {
+                if (segment.length >= capacity) {
+                    break;
+                }
+                prev = segment;
+                segment = segment.next;
+            }
+
+            if (segment == null) {
+                return false;
+            }
+
+            if (prev == null) {
+                this.pool = segment.next;
+            } else {
+                prev.next = segment.next;
+            }
+            this.staged = segment;
+            segment.next = null;
+            return true;
         }
 
         @Override
-        public void stage(int minimumLength) {
-            // TODO Auto-generated method stub
+        public void finish(int length) {
+            if (length < 0) {
+                throw new IllegalArgumentException();
+            }
+            final var staged = this.staged;
+            if (staged == null) {
+                throw new IllegalStateException();
+            }
+            if (staged.length < length) {
+                throw new IllegalStateException();
+            }
+            this.staged = null;
+            if (length == 0) {// if no data written, return rental to pool
+                staged.next = this.pool;
+                this.pool = staged;
+                return;
+            }
+            final var rest = staged.length - length;
+            staged.length = length;
+            if (rest > 0) {// segment has extra space
+                final var p = new Segment(staged.buffer, length, rest);
+                p.next = this.pool;
+                this.pool = p;
+            }
 
+            if (firstSegment == null) {// sequence has no segment
+                firstSegment = lastSegment = staged;
+                firstIndex = 0;
+                lastIndex = length;
+            } else {
+                lastSegment.next = staged;
+                lastSegment = staged;
+                lastIndex = length;
+            }
+
+            SegmentBuffer.this.length += length;
         }
 
         @Override
         public T stagedBuffer() {
-            // TODO Auto-generated method stub
-            return null;
+            if (this.staged == null) {
+                throw new IllegalStateException();
+            }
+            return this.staged.buffer;
         }
 
         @Override
         public int stagedLength() {
-            // TODO Auto-generated method stub
-            return 0;
+            return this.staged.length;
         }
 
         @Override
         public int stagedOffset() {
-            // TODO Auto-generated method stub
-            return 0;
-        }
-
-        @Override
-        public boolean tryStage(int minimumLength) {
-            // TODO Auto-generated method stub
-            return false;
+            return this.staged.offset;
         }
 
     }
