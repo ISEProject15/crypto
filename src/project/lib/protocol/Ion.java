@@ -93,6 +93,11 @@ public abstract sealed class Ion permits Ion.Mapping, Ion.Atom, Ion.Array {
                 public <U> boolean is(Class<U> cls) {
                     return cls == String.class;
                 }
+
+                @Override
+                public String toString() {
+                    return this.atom.text();
+                }
             };
         }
     }

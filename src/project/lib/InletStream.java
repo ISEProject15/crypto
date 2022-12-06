@@ -4,8 +4,6 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 
-import project.lib.scaffolding.debug.BinaryDebug;
-
 //入力用のストリームを表すインターフェイス
 public interface InletStream extends Closeable {
     public static InletStream from(InputStream source) {
@@ -51,12 +49,8 @@ public interface InletStream extends Closeable {
         while (true) {
             writer.stage(this.preferredBufferSize());
             final var written = this.read(writer.stagedBuffer(), writer.stagedOffset(), writer.stagedLength());
-            System.out
-                    .println("collect step:"
-                            + BinaryDebug.dumpHex(writer.stagedBuffer(), writer.stagedOffset(), writer.stagedLength()));
             writer.finish(StreamUtil.lenof(written));
 
-            System.in.read();
             if (StreamUtil.isLast(written)) {
                 break;
             }

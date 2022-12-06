@@ -3,7 +3,6 @@ package project.lib.crypto.algorithm;
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.Random;
-import static project.lib.scaffolding.debug.BinaryDebug.*;
 
 import project.lib.StreamBuffer;
 import project.lib.StreamUtil;
@@ -19,7 +18,12 @@ public class RSAPlain {
         final var one = BigInteger.ONE;
         final var random = new Random();
         final var p = BigInteger.probablePrime(k, random);
-        final var q = BigInteger.probablePrime(k, random);
+        // p must not equal to q
+        BigInteger prime = null;
+        do {
+            prime = BigInteger.probablePrime(k, random);
+        } while (p.equals(prime));
+        final var q = prime;
 
         final var modulo = p.multiply(q);
         final var phi = p.subtract(one).multiply(q.subtract(one));
@@ -65,12 +69,20 @@ public class RSAPlain {
         return (num + div - 1) / div;
     }
 
+    public static int plainBlockLength(BigInteger modulo) {
+        return bitPlainBlockLength(modulo) / 8;
+    }
+
+    public static int codeBlockLength(BigInteger modulo) {
+        return ceil(modulo.bitLength(), 8);
+    }
+
     private static class Encrypter implements Transformer {
         public Encrypter(BigInteger exponent, BigInteger modulo) {
             this.exponent = exponent;
             this.modulo = modulo;
-            final var plainBlockLength = bitPlainBlockLength(modulo) / 8;
-            this.codeBlockLength = ceil(modulo.bitLength(), 8);
+            final var plainBlockLength = plainBlockLength(modulo);
+            this.codeBlockLength = codeBlockLength(modulo);
             this.plainBlock = new byte[plainBlockLength];
             this.buffer = new StreamBuffer();
             this.blockRemaining = 0;
@@ -83,6 +95,17 @@ public class RSAPlain {
         private final BigInteger exponent, modulo;
         private final StreamBuffer buffer;
         private boolean ended;
+
+        @Override
+        public int maximumOutputSize(int sourceLength) {
+            final var len = StreamUtil.lenof(sourceLength);
+            final var total = this.blockRemaining + len;
+            if (StreamUtil.isLast(sourceLength)) {
+                return ceil(total, this.plainBlock.length) * this.codeBlockLength;
+            } else {
+                return total / this.plainBlock.length * this.codeBlockLength;
+            }
+        }
 
         @Override
         public int transform(byte[] source, int sourceOffset, int sourceLength, byte[] destination,
@@ -130,12 +153,10 @@ public class RSAPlain {
                     break;
                 }
 
-                System.out.println("plain block:" + dumpHex(plainBlock));
                 final var plain = new BigInteger(1, plainBlock);
                 final var code = plain.modPow(exponent, modulo);
                 // code satisfies 0 <= code < modulo, so bin length is outputBlockLength at most
                 final var bin = code.toByteArray();
-                System.out.println(" code block:" + dumpHex(bin));
                 // bin.length may exceeds inputBlockLength
                 final var l = Math.min(codeBlockLength, bin.length);
                 final var o = bin.length - l;
@@ -160,43 +181,41 @@ public class RSAPlain {
         public Decrypter(BigInteger secret, BigInteger modulo) {
             this.secret = secret;
             this.modulo = modulo;
-            final var codeBlockLength = ceil(modulo.bitLength(), 8);
-            this.plainBlockLength = bitPlainBlockLength(modulo) / 8;
-            this.block = new byte[codeBlockLength];
+            final var codeBlockLength = codeBlockLength(modulo);
+            this.plainBlockLength = plainBlockLength(modulo);
+            this.codeBlock = new byte[codeBlockLength];
             this.buffer = new StreamBuffer();
             this.ended = false;
         }
 
         private final int plainBlockLength;
         private int blockRemaining;
-        private final byte[] block;
+        private final byte[] codeBlock;
         private final BigInteger secret;
         private final BigInteger modulo;
         private final StreamBuffer buffer;
         private boolean ended;
 
         @Override
-        public int estimatedOutputSize(int sourceLength) {
-            return -1;
+        public int maximumOutputSize(int sourceLength) {
+            final var len = StreamUtil.lenof(sourceLength);
+            final var total = this.blockRemaining + len;
+            if (StreamUtil.isLast(sourceLength)) {
+                return ceil(total, this.codeBlock.length) * this.plainBlockLength;
+            } else {
+                return total / this.codeBlock.length * this.plainBlockLength;
+            }
         }
 
         @Override
         public int transform(byte[] source, int sourceOffset, int sourceLength, byte[] destination,
                 int destinationOffset, int destinationLength) {
 
-            System.out.println("decrypto");
-            System.out.println(dumpHex(source, sourceOffset, StreamUtil.lenof(sourceLength)));
-            System.out.println("ended " + this.ended);
             if (!this.ended) {
-                System.out.println("write to buffer");
                 this.writeToBuffer(source, sourceOffset, sourceLength);
-                System.out.println("buffer");
             }
             final var written = this.buffer.read(destination, destinationOffset, destinationLength);
-            System.out.println("destinationLength " + destinationLength);
-            System.out.println("buffer.length " + this.buffer.length());
-            System.out.println("buffer is empty " + this.buffer.isEmpty());
-            System.out.println("written:" + written);
+
             if (this.ended) {
                 return written;
             } else {
@@ -205,7 +224,7 @@ public class RSAPlain {
         }
 
         private void writeToBuffer(byte[] source, int offset, int sourceLength) {
-            final var block = this.block;
+            final var block = this.codeBlock;
             final var codeBlockLength = block.length;
             final var plainBlockLength = this.plainBlockLength;
             final var isSourceLast = StreamUtil.isLast(sourceLength);
@@ -235,11 +254,9 @@ public class RSAPlain {
                     break;
                 }
 
-                System.out.println(" code block:" + dumpHex(block));
                 final var code = new BigInteger(1, block);
                 final var plain = code.modPow(secret, modulo);
                 final var bin = plain.toByteArray();
-                System.out.println("plain block:" + dumpHex(bin));
                 // bin.length may differ from inputBlockLength
 
                 final var l = Math.min(plainBlockLength, bin.length);

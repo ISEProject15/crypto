@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
 import project.lib.DuplexStream;
-import project.lib.StreamReader;
 
 // server, client のペアを定義する
 public class MetaProtocol {
@@ -23,8 +22,6 @@ public class MetaProtocol {
         }
         final var code = IonCodec.instance.encode(array);
         final var bytes = code.toString().getBytes(StandardCharsets.UTF_8);
-        final var reader = StreamReader.create(inlet);
-
         // send available protocol identity list
         outlet.write(bytes, 0, bytes.length);
         // receive protocol identity and protocol initialization arguments

@@ -34,7 +34,7 @@ public class TransformedInletStream implements InletStream {
         if (this.buffer == null) {
             return -1;
         }
-        return transformer.estimatedOutputSize(this.buffer.length);
+        return transformer.maximumOutputSize(this.buffer.length);
     }
 
     @Override

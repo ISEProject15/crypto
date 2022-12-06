@@ -10,7 +10,7 @@ public interface Transformer {
 
     // 次のtransformの呼び出しでsourceLengthの入力が与えられた時に出力されるであろうバイト数を返す．
     // -1が返されたとき，出力されるサイズは未定であることを示す．
-    public default int estimatedOutputSize(int sourceLength) {
+    public default int maximumOutputSize(int sourceLength) {
         return -1;
     }
 }

@@ -1,10 +1,8 @@
 package project.lib.scaffolding.collections;
 
 import java.lang.reflect.Array;
-import java.util.Arrays;
 
 import project.lib.StreamUtil;
-import project.lib.scaffolding.debug.BinaryDebug;
 
 public class SegmentBuffer<T> extends Sequence<T> {
     public SegmentBuffer(SegmentBufferStrategy strategy, Class<T> cls) {
