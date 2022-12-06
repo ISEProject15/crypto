@@ -6,8 +6,8 @@ public final class SequenceIterator<T> {
     }
 
     private SequenceIterator(Sequence<T> sequence) {
-        this.firstSegment = sequence.first();
-        this.lastSegment = sequence.last();
+        this.firstSegment = sequence.firstSegment();
+        this.lastSegment = sequence.lastSegment();
         this.firstIndex = sequence.firstIndex();
         this.lastIndex = sequence.lastIndex();
     }

@@ -7,13 +7,10 @@ import project.lib.StreamUtil;
 //FIXME: length mismatch 
 public class SegmentBuffer<T> extends Sequence<T> {
     public SegmentBuffer(SegmentBufferStrategy strategy, Class<T> cls) {
-        if (!cls.isArray()) {
-            throw new IllegalArgumentException();
-        }
+        super(cls);
         if (strategy == null) {
             throw new IllegalArgumentException();
         }
-        this.bufferCls = cls;
         this.strategy = strategy;
     }
 
@@ -21,7 +18,6 @@ public class SegmentBuffer<T> extends Sequence<T> {
         this(SegmentBufferStrategy.defaultStrategy, cls);
     }
 
-    private final Class<T> bufferCls;
     public final SegmentBufferStrategy strategy;
     private Segment firstSegment;
     private int firstIndex;
@@ -37,12 +33,12 @@ public class SegmentBuffer<T> extends Sequence<T> {
     }
 
     @Override
-    public SequenceSegment<T> first() {
+    public SequenceSegment<T> firstSegment() {
         return this.firstSegment;
     }
 
     @Override
-    public SequenceSegment<T> last() {
+    public SequenceSegment<T> lastSegment() {
         return this.lastSegment;
     }
 
@@ -54,10 +50,6 @@ public class SegmentBuffer<T> extends Sequence<T> {
     @Override
     public int lastIndex() {
         return this.lastIndex;
-    }
-
-    public boolean isEmpty() {
-        return this.length <= 0;
     }
 
     // put segment that is greater than capacity into stage
@@ -167,6 +159,7 @@ public class SegmentBuffer<T> extends Sequence<T> {
             throw new IllegalArgumentException();
         }
 
+        final var lastSegment = this.lastSegment;
         var written = 0;
         var segment = this.firstSegment;
         var segmentOffset = this.firstIndex;
@@ -174,17 +167,17 @@ public class SegmentBuffer<T> extends Sequence<T> {
         System.out.println(segment);
         while (segment != null && written < length) {
             final var rest = length - written;
-            final var segmentLength = segment.length - segmentOffset;
+            final var segmentLength = segment == lastSegment ? this.lastIndex : segment.length;
 
-            final var toWrite = Math.min(segmentLength, rest);
-            System.arraycopy(segment.buffer, segmentOffset, destination, written + offset, toWrite);
+            final var toWrite = Math.min(segmentLength - segmentOffset, rest);
+            System.arraycopy(segment.buffer, segmentOffset + segment.offset, destination, written + offset, toWrite);
 
             if (segmentLength <= rest) {
                 final var next = segment.next;
                 segment.next = pool;
                 pool = segment;
                 segment = next;
-                segmentOffset = next != null ? next.offset : 0;
+                segmentOffset = 0;
             } else {
                 segmentOffset += toWrite;
             }
@@ -242,22 +235,48 @@ public class SegmentBuffer<T> extends Sequence<T> {
         this.length -= written;
     }
 
-    @SuppressWarnings("unchecked")
-    public T toArray() {
-        final var array = (T) Array.newInstance(elementCls(), this.length);
-        var written = 0;
-        var segment = this.firstSegment;
-        while (written < length) {
-            final var len = segment.length();
-            System.arraycopy(segment.buffer, segment.offset(), array, written, len);
-            written += len;
-            segment = segment.next;
-        }
-        return array;
+    private Class<?> elementCls() {
+        return this.bufferClass.componentType();
     }
 
-    private Class<?> elementCls() {
-        return this.bufferCls.componentType();
+    private final class Writer implements BufferWriter<T> {
+
+        @Override
+        public void finish(int written) {
+            // TODO Auto-generated method stub
+
+        }
+
+        @Override
+        public void stage(int minimumLength) {
+            // TODO Auto-generated method stub
+
+        }
+
+        @Override
+        public T stagedBuffer() {
+            // TODO Auto-generated method stub
+            return null;
+        }
+
+        @Override
+        public int stagedLength() {
+            // TODO Auto-generated method stub
+            return 0;
+        }
+
+        @Override
+        public int stagedOffset() {
+            // TODO Auto-generated method stub
+            return 0;
+        }
+
+        @Override
+        public boolean tryStage(int minimumLength) {
+            // TODO Auto-generated method stub
+            return false;
+        }
+
     }
 
     private final class Segment extends SequenceSegment<T> {
