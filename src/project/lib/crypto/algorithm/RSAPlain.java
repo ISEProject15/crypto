@@ -3,6 +3,7 @@ package project.lib.crypto.algorithm;
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.Random;
+import static project.lib.scaffolding.debug.BinaryDebug.*;
 
 import project.lib.StreamBuffer;
 import project.lib.StreamUtil;
@@ -10,7 +11,7 @@ import project.lib.Transformer;
 import project.test.RSAKeyBundle;
 
 public class RSAPlain {
-
+    // 暗号化のどこかで余計なデータが挿入されている．おそらくバッファの初期化ミス
     public static RSAKeyBundle generateKey(int k) {
         if (k <= 8) {
             return null;
@@ -146,17 +147,20 @@ public class RSAPlain {
                 System.arraycopy(source, sourceOffset + read, plainBlock, blockRemaining, len);
                 blockRemaining += len;
                 read += len;
-                Arrays.fill(plainBlock, blockRemaining, plainBlockLength, (byte) 0);
 
                 final var remain = blockRemaining < plainBlockLength;
                 if (blockRemaining == 0 || !isSourceLast && remain) {
                     break;
                 }
 
+                Arrays.fill(plainBlock, blockRemaining, plainBlockLength, (byte) 0);
+
+                System.out.println("plain block:" + dumpHex(plainBlock));
                 final var plain = new BigInteger(1, plainBlock);
                 final var code = plain.modPow(exponent, modulo);
                 // code satisfies 0 <= code < modulo, so bin length is outputBlockLength at most
                 final var bin = code.toByteArray();
+                System.out.println(" code block:" + dumpHex(bin));
                 // bin.length may exceeds inputBlockLength
                 final var l = Math.min(codeBlockLength, bin.length);
                 final var o = bin.length - l;
@@ -211,6 +215,8 @@ public class RSAPlain {
         public int transform(byte[] source, int sourceOffset, int sourceLength, byte[] destination,
                 int destinationOffset, int destinationLength) {
 
+            System.out.println("decrypt");
+            System.out.println(dumpHex(source, sourceOffset, StreamUtil.lenof(sourceLength)));
             if (!this.ended) {
                 this.writeToBuffer(source, sourceOffset, sourceLength);
             }
@@ -254,9 +260,11 @@ public class RSAPlain {
                     break;
                 }
 
+                System.out.println(" code block:" + dumpHex(block));
                 final var code = new BigInteger(1, block);
                 final var plain = code.modPow(secret, modulo);
                 final var bin = plain.toByteArray();
+                System.out.println("plain block:" + dumpHex(bin));
                 // bin.length may differ from inputBlockLength
 
                 final var l = Math.min(plainBlockLength, bin.length);

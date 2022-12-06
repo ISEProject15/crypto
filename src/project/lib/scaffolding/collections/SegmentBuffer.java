@@ -172,6 +172,7 @@ public class SegmentBuffer<T> extends Sequence<T> {
 
         public void pushPool(Segment segment) {
             segment.next = this.pool;
+            segment.clear();
             this.pool = segment;
         }
 
@@ -309,6 +310,10 @@ public class SegmentBuffer<T> extends Sequence<T> {
         @Override
         public int length() {
             return this.length;
+        }
+
+        public void clear() {
+            ArrayUtil.clear(this.buffer, this.offset, this.length + this.offset);
         }
 
         public int write(T source, int offset, int length) {
