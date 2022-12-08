@@ -5,22 +5,28 @@ import java.lang.reflect.Method;
 
 import java.util.List;
 import java.util.Objects;
-
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class TestCollector {
+    public static TestSuite collect(String packageName) {
+        final List<TestAgent> agents = ReflectionUtil.allClasses("project").stream().map(TestCollector::collect)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+        return new TestSuite(packageName, null, agents);
+    }
+
     // collect test agents defined in class
-    public static TestAgent collect(Class<?> cls) {
+    public static TestSuite collect(Class<?> cls) {
         final var annotation = cls.getAnnotation(TestAnnotation.class);
         if (annotation == null) {
-            throw new IllegalArgumentException();
+            return null;
         }
         Constructor<?> ctor = null;
         try {
             ctor = cls.getConstructor();
         } catch (NoSuchMethodException e) {
-            throw new IllegalArgumentException();
+            return null;
         }
 
         final var methods = cls.getMethods();
@@ -47,7 +53,7 @@ public class TestCollector {
         try {
             tmp = ctor.newInstance();
         } catch (Exception e) {
-            throw new IllegalArgumentException();
+            return null;
         }
         final var instance = tmp;
         final List<TestAgent> agents = Stream.of(methods).filter(Objects::nonNull)

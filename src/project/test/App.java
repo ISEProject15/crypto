@@ -11,7 +11,7 @@ import static project.lib.scaffolding.debug.BinaryDebug.*;
 public class App {
 
     public static void main(String[] args) throws Exception {
-        for (final var cls : ReflectionUtil.classes("project")) {
+        for (final var cls : ReflectionUtil.allClasses("project")) {
             System.out.println(cls);
         }
 
