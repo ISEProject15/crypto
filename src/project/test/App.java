@@ -5,15 +5,18 @@ import java.nio.charset.StandardCharsets;
 import project.lib.InletStream;
 import project.lib.crypto.algorithm.RSAPlain;
 import project.test.scaffolding.ReflectionUtil;
+import project.test.scaffolding.TestCollector;
+import project.test.scaffolding.TestServer;
 
 import static project.lib.scaffolding.debug.BinaryDebug.*;
 
 public class App {
 
     public static void main(String[] args) throws Exception {
-        for (final var cls : ReflectionUtil.allClasses("project")) {
-            System.out.println(cls);
-        }
+        final var tests = TestCollector.collect("project.test.unitTests");
+        final var server = TestServer.create();
+        server.register(tests);
+        server.execute();
 
         final var keyBundle = RSAPlain.generateKey(33);
         final var encripter = RSAPlain.encripter(keyBundle.exponent, keyBundle.modulo);

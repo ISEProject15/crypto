@@ -2,7 +2,7 @@ package project.test.scaffolding;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
-
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -10,7 +10,7 @@ import java.util.stream.Stream;
 
 public class TestCollector {
     public static TestSuite collect(String packageName) {
-        final List<TestAgent> agents = ReflectionUtil.allClasses("project").stream().map(TestCollector::collect)
+        final List<TestAgent> agents = ReflectionUtil.allClasses(packageName).stream().map(TestCollector::collect)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
         return new TestSuite(packageName, null, agents);
@@ -29,7 +29,7 @@ public class TestCollector {
             return null;
         }
 
-        final var methods = cls.getMethods();
+        final var methods = cls.getDeclaredMethods();
         if (methods.length == 0) {
             return null;
         }

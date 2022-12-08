@@ -35,7 +35,7 @@ public class ReflectionUtil {
                 @Override
                 public boolean visit(String state, File file) {
                     final var filename = file.getName();
-                    this.state = state == null ? filename : (state + "." + filename);
+                    this.state = state == null ? "" : (state + "." + filename);
                     return file.isFile();
                 }
 
@@ -43,7 +43,7 @@ public class ReflectionUtil {
                 public String state() {
                     return this.state;
                 }
-            }).filter(f -> f.endsWith(".class"));
+            }).filter(f -> f.endsWith(".class")).map(f -> packageName + f);
 
             return classes(files);
         }
@@ -72,7 +72,7 @@ public class ReflectionUtil {
                 .collect(Collectors.toSet());
     }
 
-    private static <T> T unchecked(Callable<T> supplier) {
+    public static <T> T unchecked(Callable<T> supplier) {
         try {
             return supplier.call();
         } catch (Exception e) {

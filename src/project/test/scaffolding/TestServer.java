@@ -3,6 +3,10 @@ package project.test.scaffolding;
 import java.util.ArrayList;
 
 public class TestServer {
+    public static TestServer create() {
+        return new TestServer();
+    }
+
     private TestServer() {
         this.agents = new ArrayList<>();
     }
@@ -28,7 +32,7 @@ public class TestServer {
     private static void printSummaryIndented(TestSummary summary, int indent) {
         printIndent(indent);
         System.out.print(summary.domain);
-        if (summary.description != null) {
+        if (!isNullOrEmpty(summary.description)) {
             System.out.print(" : ");
             System.out.print(summary.description);
         }
@@ -47,5 +51,9 @@ public class TestServer {
         while (level > 0) {
             System.out.print("  ");
         }
+    }
+
+    private static boolean isNullOrEmpty(String str) {
+        return str == null || str.isEmpty();
     }
 }
