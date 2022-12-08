@@ -1,25 +1,20 @@
 package project.test;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-
-import javax.net.ssl.StandardConstants;
 
 import project.lib.InletStream;
-import project.lib.StreamBuffer;
-import project.lib.TransformedInletStream;
 import project.lib.crypto.algorithm.RSAPlain;
-import project.lib.protocol.IonBuilder;
+import project.test.scaffolding.ReflectionUtil;
 
 import static project.lib.scaffolding.debug.BinaryDebug.*;
 
 public class App {
 
     public static void main(String[] args) throws Exception {
+        for (final var cls : ReflectionUtil.classes("project")) {
+            System.out.println(cls);
+        }
+
         final var keyBundle = RSAPlain.generateKey(33);
         final var encripter = RSAPlain.encripter(keyBundle.exponent, keyBundle.modulo);
         final var decripter = RSAPlain.decripter(keyBundle.secret, keyBundle.modulo);
