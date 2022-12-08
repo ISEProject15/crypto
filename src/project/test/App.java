@@ -29,9 +29,8 @@ public class App {
         System.out.print(";codeBlock:");
         System.out.print(RSAPlain.codeBlockLength(keyBundle.modulo));
         System.out.println();
-
-        final var plain = "yo text 09328109jdiaondwoiansdwohia79201j20ujdw0a9jd092u1j923j10ijsd89jw09a"
-                .getBytes(StandardCharsets.UTF_8);
+        final var plainText = "yo text 09328109jdiaondwoiansdwohia79201j20ujdw0a9jd092u1j923j10ijsd89jw09a";
+        final var plain = plainText.getBytes(StandardCharsets.UTF_8);
         System.out.println("  plain:" + dumpHex(plain));
         final var codeInlet = InletStream.from(plain)
                 .transform(encripter);
@@ -53,8 +52,9 @@ public class App {
         final var len = index < 0 ? decoded.length : index;
         System.out.println(index);
 
-        final var str = new String(decoded, 0, len, StandardCharsets.UTF_8);
-        System.out.println(str);
+        final var decodedText = new String(decoded, 0, len, StandardCharsets.UTF_8);
+        System.out.println(decodedText);
+        System.out.println(decodedText.equals(plainText));
     }
 
     static int indexOf(byte[] bin, int offset, int length, byte value) {
