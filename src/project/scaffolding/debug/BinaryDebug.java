@@ -5,13 +5,6 @@ import java.io.IOException;
 import project.lib.scaffolding.collections.Sequence;
 
 public class BinaryDebug {
-    static final String SET_COLOR = "\u001B[";
-    static final String RESET = "0m";
-    static final String COLOR_RESET = SET_COLOR + RESET;
-    static final String BG_RED = "41m";
-    static final String BG_GREEN = "42m";
-    static final String BG_BLUE = "44m";
-
     private static void dumpHexNoException(Appendable builder, byte[] bin, int offset, int length) {
         try {
             dumpHex(builder, bin, offset, length);
@@ -48,11 +41,11 @@ public class BinaryDebug {
         for (var i = 0; i < bin.length; ++i) {
             final var b = bin[i];
             if (i == offset) {
-                builder.append(SET_COLOR + BG_RED);
+                builder.append(AnsiColor.bgRed);
             }
             dumpHexNoException(builder, b);
             if (i == length + offset - 1) {
-                builder.append(COLOR_RESET);
+                builder.append(AnsiColor.reset);
             }
         }
         return builder.toString();
@@ -71,11 +64,11 @@ public class BinaryDebug {
             dumpHexNoException(builder, bin0[i]);
         }
         if (minLen < bin0.length) {
-            builder.append(SET_COLOR + BG_GREEN);
+            builder.append(AnsiColor.bgGreen);
             for (var i = minLen; i < bin0.length; ++i) {
                 dumpHexNoException(builder, bin0[i]);
             }
-            builder.append(COLOR_RESET);
+            builder.append(AnsiColor.reset);
         }
         builder.append(System.lineSeparator());
         builder.append("trg:");
@@ -86,24 +79,24 @@ public class BinaryDebug {
 
             final var differ = b0 != b1;
             if (inDifferentSection && !differ) {// from different section into same section
-                builder.append(COLOR_RESET);
+                builder.append(AnsiColor.reset);
             }
             if (!inDifferentSection && differ) {// from same section into different section
-                builder.append(SET_COLOR + BG_RED);
+                builder.append(AnsiColor.bgRed);
             }
             dumpHexNoException(builder, b1);
             inDifferentSection = differ;
         }
         if (inDifferentSection) {
-            builder.append(COLOR_RESET);
+            builder.append(AnsiColor.reset);
         }
 
         if (minLen < bin1.length) {
-            builder.append(SET_COLOR + BG_RED);
+            builder.append(AnsiColor.bgRed);
             for (var i = minLen; i < bin1.length; ++i) {
                 dumpHexNoException(builder, bin1[i]);
             }
-            builder.append(COLOR_RESET);
+            builder.append(AnsiColor.reset);
         }
 
         return builder.toString();
