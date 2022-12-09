@@ -7,7 +7,7 @@ public class TestSummary {
         return new TestSummary(domain, description, null);
     }
 
-    public static TestSummary withException(String domain, String description, Exception exception) {
+    public static TestSummary withException(String domain, String description, Throwable exception) {
         return new TestSummary(domain, description, exception);
     }
 
@@ -42,8 +42,8 @@ public class TestSummary {
         return null;
     }
 
-    public Exception exception() {
-        if (this.childrenOrException instanceof Exception exception) {
+    public Throwable exception() {
+        if (this.childrenOrException instanceof Throwable exception) {
             return exception;
         }
         return null;

@@ -1,8 +1,8 @@
 package project.test.scaffolding;
 
 import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -78,6 +78,8 @@ public class TestCollector {
             try {
                 this.method.invoke(this.instance);
                 return TestSummary.succeeded(this.domain, this.description);
+            } catch (InvocationTargetException e) {
+                return TestSummary.withException(this.domain, this.description, e.getCause());
             } catch (Exception e) {
                 return TestSummary.withException(this.domain, this.description, e);
             }

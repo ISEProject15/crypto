@@ -6,16 +6,12 @@ import java.nio.charset.StandardCharsets;
 
 import project.lib.InletStream;
 import project.lib.crypto.algorithm.RSAPlain;
-import project.test.scaffolding.ReflectionUtil;
 import project.test.scaffolding.TestCollector;
 import project.test.scaffolding.TestServer;
 
 public class App {
 
     public static void main(String[] args) throws Exception {
-        final var clss = ReflectionUtil.allClasses("project");
-        System.out.println(clss);
-        ReflectionUtil.unchecked(() -> System.in.read());
         final var tests = TestCollector.collect("project.test.unitTests");
         final var server = TestServer.create();
         server.register(tests);

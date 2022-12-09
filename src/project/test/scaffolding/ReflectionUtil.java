@@ -5,7 +5,6 @@ import java.net.JarURLConnection;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.Callable;
 
@@ -17,8 +16,8 @@ public class ReflectionUtil {
         final String resourceName = packageName.replace('.', '/');
         final ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         final URL root = classLoader.getResource(resourceName);
-        
-        if(root == null) {
+
+        if (root == null) {
             return null;
         }
 
