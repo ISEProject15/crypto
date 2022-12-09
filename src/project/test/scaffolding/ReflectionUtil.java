@@ -1,8 +1,10 @@
 package project.test.scaffolding;
 
 import java.io.File;
+import java.net.JarURLConnection;
 import java.net.URL;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.Callable;
@@ -15,12 +17,28 @@ public class ReflectionUtil {
         final String resourceName = packageName.replace('.', '/');
         final ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         final URL root = classLoader.getResource(resourceName);
-
-        if ("file".equals(root.getProtocol())) {
-            File[] files = new File(root.getFile()).listFiles((dir, name) -> name.endsWith(".class"));
-            return classes(Arrays.stream(files).map(f -> packageName + "." + f.getName()));
+        
+        if(root == null) {
+            return new Set<>();
         }
-        return new HashSet<>();
+
+        final Stream<String> stream = switch (root.getProtocol()) {
+            case "file" -> {
+                File[] files = new File(root.getFile()).listFiles((dir, name) -> name.endsWith(".class"));
+                yield Arrays.stream(files).map(f -> packageName + "." + f.getName());
+            }
+            case "jar" -> {
+                try {
+                    final var jar = ((JarURLConnection) root.openConnection()).getJarFile();
+                    yield Collections.list(jar.entries()).stream().map(e -> e.getName())
+                            .filter(n -> n.startsWith(resourceName));
+                } catch (Exception e) {
+                    yield Stream.empty();
+                }
+            }
+            default -> Stream.empty();
+        };
+        return classesFrom(stream);
     }
 
     public static Set<Class<?>> allClasses(String packageName) {
@@ -45,9 +63,24 @@ public class ReflectionUtil {
                 }
             }).filter(f -> f.endsWith(".class")).map(f -> packageName + f);
 
-            return classes(files);
+            return classesFrom(files);
         }
         return new HashSet<>();
+    }
+
+    public static <T> T unchecked(Callable<T> supplier) {
+        try {
+            return supplier.call();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static Set<Class<?>> classesFrom(Stream<String> names) {
+        return names
+                .map(name -> name.replaceAll(".class$", ""))
+                .map(fullName -> unchecked(() -> Class.forName(fullName)))
+                .collect(Collectors.toSet());
     }
 
     private static <T> Stream<T> visitAllFiles(File file, T state, FileVisitor<T> visitor) {
@@ -63,20 +96,5 @@ public class ReflectionUtil {
         public boolean visit(T state, File file);
 
         public T state();
-    }
-
-    private static Set<Class<?>> classes(Stream<String> names) {
-        return names
-                .map(name -> name.replaceAll(".class$", ""))
-                .map(fullName -> unchecked(() -> Class.forName(fullName)))
-                .collect(Collectors.toSet());
-    }
-
-    public static <T> T unchecked(Callable<T> supplier) {
-        try {
-            return supplier.call();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
     }
 }
