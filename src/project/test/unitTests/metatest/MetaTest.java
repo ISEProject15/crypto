@@ -6,7 +6,7 @@ import project.test.scaffolding.TestAnnotation;
 public class MetaTest {
     @TestAnnotation
     void test_no_exception() {
-
+        System.out.println("this text must not be shown");
     }
 
     @TestAnnotation
