@@ -7,6 +7,5 @@ public abstract class TestAgent {
 
     public final String domain;
 
-
     public abstract TestSummary execute();
 }

@@ -1,5 +1,7 @@
 package project.test.scaffolding;
 
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -75,13 +77,26 @@ public class TestCollector {
 
         @Override
         public TestSummary execute() {
+            final var defaultOut = System.out;
+            final var defaultErr = System.err;
+            final var stdoutBase = new ByteArrayOutputStream();
+            final var stderrBase = new ByteArrayOutputStream();
             try {
+                final var stdout = new PrintStream(stdoutBase, true);
+                final var stderr = new PrintStream(stderrBase, true);
+                System.setOut(stdout);
+                System.setErr(stderr);
                 this.method.invoke(this.instance);
-                return TestSummary.succeeded(this.domain);
+
+                return TestSummary.succeeded(this.domain, stdoutBase.toString(), stderrBase.toString());
             } catch (InvocationTargetException e) {
-                return TestSummary.withException(this.domain, e.getCause());
+                return TestSummary.withException(this.domain, stdoutBase.toString(), stderrBase.toString(),
+                        e.getCause());
             } catch (Exception e) {
-                return TestSummary.withException(this.domain, e);
+                return TestSummary.withException(this.domain, stdoutBase.toString(), stderrBase.toString(), e);
+            } finally {
+                System.setOut(defaultOut);
+                System.setErr(defaultErr);
             }
         }
 

@@ -7,13 +7,13 @@ import java.nio.charset.StandardCharsets;
 import project.lib.InletStream;
 import project.lib.crypto.algorithm.RSAPlain;
 import project.test.scaffolding.TestCollector;
-import project.test.scaffolding.TestServer;
+import project.test.scaffolding.TestExecutor;
 
 public class App {
 
     public static void main(String[] args) throws Exception {
         final var tests = TestCollector.collect("project.test.unitTests");
-        final var server = TestServer.create();
+        final var server = TestExecutor.create();
         server.register(tests);
         server.execute();
 

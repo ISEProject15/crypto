@@ -3,25 +3,53 @@ package project.test.scaffolding;
 import java.util.stream.StreamSupport;
 
 public class TestSummary {
-    public static TestSummary succeeded(String domain) {
-        return new TestSummary(domain, null);
+    public static TestSummary succeeded(String domain, CharSequence stdout, CharSequence stderr) {
+        return new TestSummary(domain, stdout, stderr, null);
     }
 
-    public static TestSummary withException(String domain, Throwable exception) {
-        return new TestSummary(domain, exception);
+    public static TestSummary withException(String domain, CharSequence stdout, CharSequence stderr,
+            Throwable exception) {
+        return new TestSummary(domain, stdout, stderr, exception);
     }
 
     public static TestSummary withChildren(String domain, Iterable<TestSummary> children) {
-        return new TestSummary(domain, children);
+        CharSequence stdout = null, stderr = null;
+        for (final var child : children) {
+            if (stdout == null) {
+                stdout = child.standardOutputDump;
+            } else {
+                stdout = JoinedCharSequence.join(stdout, child.standardOutputDump);
+            }
+
+            if (stderr == null) {
+                stderr = child.standardOutputDump;
+            } else {
+                stderr = JoinedCharSequence.join(stderr, child.standardErrorDump);
+            }
+        }
+
+        return new TestSummary(domain, stdout, stderr, children);
     }
 
-    private TestSummary(String domain, Object obj) {
+    private TestSummary(String domain, CharSequence stdout, CharSequence stderr, Object obj) {
         this.domain = domain;
         this.childrenOrException = obj;
+        this.standardOutputDump = stdout;
+        this.standardErrorDump = stderr;
     }
 
     public final String domain;
     private final Object childrenOrException;
+    private final CharSequence standardOutputDump;
+    private final CharSequence standardErrorDump;
+
+    public CharSequence standardOutputDump() {
+        return this.standardOutputDump;
+    }
+
+    public CharSequence standardErrorDump() {
+        return this.standardErrorDump;
+    }
 
     public boolean succeeded() {
         final var children = this.children();
