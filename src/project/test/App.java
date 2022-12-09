@@ -7,9 +7,8 @@ public class App {
 
     public static void main(String[] args) throws Exception {
         final var tests = TestCollector.collect("project.test.unitTests");
-        final var server = TestExecutor.create();
-        server.register(tests);
-        server.execute();
+        TestExecutor.execute(tests);
+
     }
 
 }

@@ -1,29 +1,17 @@
 package project.test.scaffolding;
 
-import java.util.ArrayList;
-
 import project.scaffolding.debug.AnsiColor;
 import project.scaffolding.debug.IndentedAppendable;
 
-public class TestExecutor {
-    public static TestExecutor create() {
-        return new TestExecutor();
-    }
-
+public final class TestExecutor {
     private TestExecutor() {
-        this.agents = new ArrayList<>();
-    }
 
-    private final ArrayList<TestAgent> agents;
-
-    public void register(TestAgent agent) {
-        this.agents.add(agent);
     }
 
     // execute tests and print results
-    public void execute() {
+    public static void execute(TestAgent... agents) {
         final var builder = new StringBuilder();
-        for (final var agent : this.agents) {
+        for (final var agent : agents) {
             final var summary = agent.execute();
             printSummary(summary, IndentedAppendable.create(builder, "  "));
         }
