@@ -44,27 +44,40 @@ public class ReflectionUtil {
         final String resourceName = packageName.replace('.', '/');
         final ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         final URL root = classLoader.getResource(resourceName);
-
-        if ("file".equals(root.getProtocol())) {
-            final var files = visitAllFiles(new File(root.getFile()), null, new FileVisitor<String>() {
-                private String state;
-
-                @Override
-                public boolean visit(String state, File file) {
-                    final var filename = file.getName();
-                    this.state = state == null ? "" : (state + "." + filename);
-                    return file.isFile();
-                }
-
-                @Override
-                public String state() {
-                    return this.state;
-                }
-            }).filter(f -> f.endsWith(".class")).map(f -> packageName + f);
-
-            return classesFrom(files);
+        if(root == null) {
+            return null;
         }
-        return Collections.emptySet();
+
+        final Stream<String> stream = switch(root.getProtocol()) {
+            case "file" -> {
+                yield visitAllFiles(new File(root.getFile()), null, new FileVisitor<String>() {
+                    private String state;
+    
+                    @Override
+                    public boolean visit(String state, File file) {
+                        final var filename = file.getName();
+                        this.state = state == null ? "" : (state + "." + filename);
+                        return file.isFile();
+                    }
+    
+                    @Override
+                    public String state() {
+                        return this.state;
+                    }
+                }).filter(f -> f.endsWith(".class")).map(f -> packageName + f);
+            }
+            case "jar" -> {
+                try {
+                    final var jar = ((JarURLConnection) root.openConnection()).getJarFile();
+                    yield Collections.list(jar.entries()).stream().map(e -> e.getName())
+                            .filter(n -> n.startsWith(resourceName));
+                } catch (Exception e) {
+                    yield Stream.empty();
+                }
+            }
+            default -> Stream.empty();
+        };
+        return classesFrom(stream);
     }
 
     public static <T> T unchecked(Callable<T> supplier) {
