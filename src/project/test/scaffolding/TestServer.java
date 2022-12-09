@@ -43,13 +43,18 @@ public class TestServer {
             }
         } else {
             System.out.print("; ");
-            System.out.println(summary.exception());
+            if (summary.succeeded()) {
+                System.out.println("");
+            } else {
+                System.out.println(summary.exception());
+            }
         }
     }
 
     private static void printIndent(int level) {
         while (level > 0) {
             System.out.print("  ");
+            level--;
         }
     }
 

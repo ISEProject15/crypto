@@ -1,4 +1,4 @@
-package project.lib.scaffolding.debug;
+package project.scaffolding.debug;
 
 import java.io.IOException;
 

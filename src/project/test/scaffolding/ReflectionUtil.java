@@ -19,7 +19,7 @@ public class ReflectionUtil {
         final URL root = classLoader.getResource(resourceName);
         
         if(root == null) {
-            return new Set<>();
+            return null;
         }
 
         final Stream<String> stream = switch (root.getProtocol()) {
@@ -65,7 +65,7 @@ public class ReflectionUtil {
 
             return classesFrom(files);
         }
-        return new HashSet<>();
+        return Collections.emptySet();
     }
 
     public static <T> T unchecked(Callable<T> supplier) {

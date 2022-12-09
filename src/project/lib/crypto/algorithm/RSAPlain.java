@@ -1,9 +1,10 @@
 package project.lib.crypto.algorithm;
 
+import static project.scaffolding.debug.BinaryDebug.*;
+
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.Random;
-import static project.lib.scaffolding.debug.BinaryDebug.*;
 
 import project.lib.StreamBuffer;
 import project.lib.StreamUtil;

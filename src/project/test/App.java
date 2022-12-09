@@ -1,5 +1,7 @@
 package project.test;
 
+import static project.scaffolding.debug.BinaryDebug.*;
+
 import java.nio.charset.StandardCharsets;
 
 import project.lib.InletStream;
@@ -8,11 +10,12 @@ import project.test.scaffolding.ReflectionUtil;
 import project.test.scaffolding.TestCollector;
 import project.test.scaffolding.TestServer;
 
-import static project.lib.scaffolding.debug.BinaryDebug.*;
-
 public class App {
 
     public static void main(String[] args) throws Exception {
+        final var clss = ReflectionUtil.allClasses("project");
+        System.out.println(clss);
+        ReflectionUtil.unchecked(() -> System.in.read());
         final var tests = TestCollector.collect("project.test.unitTests");
         final var server = TestServer.create();
         server.register(tests);
