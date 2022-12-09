@@ -7,7 +7,7 @@ public class AnsiColor {
     private static final byte BG = 2;
     private static final byte BGFG = 3;
 
-    public static final AnsiColor reset = new AnsiColor("0m", BGFG);
+    public static final AnsiColor reset = new AnsiColor("0", BGFG);
 
     public static final AnsiColor bgBlack = new AnsiColor("40", BG);
     public static final AnsiColor bgRed = new AnsiColor("41", BG);

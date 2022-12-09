@@ -2,6 +2,8 @@ package project.test.scaffolding;
 
 import java.util.ArrayList;
 
+import project.scaffolding.debug.AnsiColor;
+
 public class TestServer {
     public static TestServer create() {
         return new TestServer();
@@ -44,9 +46,13 @@ public class TestServer {
         } else {
             System.out.print("; ");
             if (summary.succeeded()) {
-                System.out.println("");
+                System.out.print(AnsiColor.fgGreen);
+                System.out.print("✓");
+                System.out.println(AnsiColor.reset);
             } else {
-                System.out.println(summary.exception());
+                System.out.print(AnsiColor.fgRed);
+                System.out.print(summary.exception());
+                System.out.println(AnsiColor.reset);
             }
         }
     }
