@@ -3,26 +3,24 @@ package project.test.scaffolding;
 import java.util.stream.StreamSupport;
 
 public class TestSummary {
-    public static TestSummary succeeded(String domain, String description) {
-        return new TestSummary(domain, description, null);
+    public static TestSummary succeeded(String domain) {
+        return new TestSummary(domain, null);
     }
 
-    public static TestSummary withException(String domain, String description, Throwable exception) {
-        return new TestSummary(domain, description, exception);
+    public static TestSummary withException(String domain, Throwable exception) {
+        return new TestSummary(domain, exception);
     }
 
-    public static TestSummary withChildren(String domain, String description, Iterable<TestSummary> children) {
-        return new TestSummary(domain, description, children);
+    public static TestSummary withChildren(String domain, Iterable<TestSummary> children) {
+        return new TestSummary(domain, children);
     }
 
-    private TestSummary(String domain, String description, Object obj) {
+    private TestSummary(String domain, Object obj) {
         this.domain = domain;
-        this.description = description;
         this.childrenOrException = obj;
     }
 
     public final String domain;
-    public final String description;
     private final Object childrenOrException;
 
     public boolean succeeded() {

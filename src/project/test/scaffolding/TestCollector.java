@@ -13,7 +13,7 @@ public class TestCollector {
         final List<TestAgent> agents = ReflectionUtil.allClasses(packageName).stream().map(TestCollector::collect)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
-        return new TestSuite(packageName, null, agents);
+        return new TestSuite(packageName, agents);
     }
 
     // collect test agents defined in class
@@ -59,13 +59,13 @@ public class TestCollector {
         final List<TestAgent> agents = Stream.of(methods).filter(Objects::nonNull)
                 .map(m -> new MethodAgent(m, instance))
                 .collect(Collectors.toList());
-        final var suite = new TestSuite(cls.getName(), annotation.description(), agents);
+        final var suite = new TestSuite(cls.getName(), agents);
         return suite;
     }
 
     private static final class MethodAgent extends TestAgent {
         public MethodAgent(Method method, Object instance) {
-            super(method.getName(), method.getAnnotation(TestAnnotation.class).description());
+            super(method.getName());
             this.method = method;
             this.instance = instance;// if method is static instance will be ignored
         }
@@ -77,11 +77,11 @@ public class TestCollector {
         public TestSummary execute() {
             try {
                 this.method.invoke(this.instance);
-                return TestSummary.succeeded(this.domain, this.description);
+                return TestSummary.succeeded(this.domain);
             } catch (InvocationTargetException e) {
-                return TestSummary.withException(this.domain, this.description, e.getCause());
+                return TestSummary.withException(this.domain, e.getCause());
             } catch (Exception e) {
-                return TestSummary.withException(this.domain, this.description, e);
+                return TestSummary.withException(this.domain, e);
             }
         }
 

@@ -6,12 +6,12 @@ import project.test.scaffolding.TestAnnotation;
 public class MetaTest {
     @TestAnnotation
     void test_no_exception() {
-        System.out.println("test");
+
     }
 
     @TestAnnotation
     void test_with_exception() {
-        assert false : "exception";
+        assert false : "exception should happen";
     }
 
     @TestAnnotation

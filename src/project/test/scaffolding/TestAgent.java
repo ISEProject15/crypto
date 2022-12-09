@@ -1,14 +1,12 @@
 package project.test.scaffolding;
 
 public abstract class TestAgent {
-    protected TestAgent(String domain, String description) {
+    protected TestAgent(String domain) {
         this.domain = domain;
-        this.description = description;
     }
 
     public final String domain;
 
-    public final String description;
 
     public abstract TestSummary execute();
 }

@@ -34,10 +34,6 @@ public class TestServer {
     private static void printSummaryIndented(TestSummary summary, int indent) {
         printIndent(indent);
         System.out.print(summary.domain);
-        if (!isNullOrEmpty(summary.description)) {
-            System.out.print(" : ");
-            System.out.print(summary.description);
-        }
         if (summary.isSuite()) {
             System.out.println();
             for (final var child : summary.children()) {
