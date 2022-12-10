@@ -12,7 +12,8 @@ import java.util.stream.Stream;
 
 public class TestCollector {
     public static TestSuite collect(String packageName) {
-        final List<TestAgent> agents = ReflectionUtil.allClasses(packageName).stream().map(TestCollector::collect)
+        final List<TestAgent> agents = ReflectionUtil.allClasses(packageName).stream()
+                .filter(cls -> cls.getAnnotation(TestAnnotation.class) != null).map(TestCollector::collect)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
         return new TestSuite(packageName, agents);
@@ -20,13 +21,10 @@ public class TestCollector {
 
     // collect test agents defined in class
     public static TestSuite collect(Class<?> cls) {
-        final var annotation = cls.getAnnotation(TestAnnotation.class);
-        if (annotation == null) {
-            return null;
-        }
         Constructor<?> ctor = null;
         try {
-            ctor = cls.getConstructor();
+            ctor = cls.getDeclaredConstructor();
+            ctor.setAccessible(true);
         } catch (NoSuchMethodException e) {
             return null;
         }
@@ -47,6 +45,7 @@ public class TestCollector {
             }
             methods[i] = null;
         }
+
         if (!hasTest) {
             return null;
         }
@@ -58,11 +57,27 @@ public class TestCollector {
             return null;
         }
         final var instance = tmp;
-        final List<TestAgent> agents = Stream.of(methods).filter(Objects::nonNull)
+        final List<TestAgent> agents = Stream.of(methods).filter(Objects::nonNull).sorted(TestCollector::methodComparer)
                 .map(m -> new MethodAgent(m, instance))
                 .collect(Collectors.toList());
         final var suite = new TestSuite(cls.getName(), agents);
         return suite;
+    }
+
+    private static int methodComparer(Method l, Method r) {
+        final var left = l.getAnnotation(TestAnnotation.class);
+        final var right = r.getAnnotation(TestAnnotation.class);
+
+        if (left.order() == right.order()) {
+            return 0;
+        }
+        if (left.order() == -1) {
+            return 1;
+        }
+        if (right.order() == -1) {
+            return -1;
+        }
+        return Integer.compare(left.order(), right.order());
     }
 
     private static final class MethodAgent extends TestAgent {
@@ -87,7 +102,6 @@ public class TestCollector {
                 System.setOut(stdout);
                 System.setErr(stderr);
                 this.method.invoke(this.instance);
-
                 return TestSummary.succeeded(this.domain, stdoutBase.toString(), stderrBase.toString());
             } catch (InvocationTargetException e) {
                 return TestSummary.withException(this.domain, stdoutBase.toString(), stderrBase.toString(),

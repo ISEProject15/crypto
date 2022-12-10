@@ -3,35 +3,21 @@ package project.test.scaffolding;
 import java.util.stream.StreamSupport;
 
 public class TestSummary {
-    public static TestSummary succeeded(String domain, CharSequence stdout, CharSequence stderr) {
+    public static TestSummary succeeded(String domain, String stdout, String stderr) {
         return new TestSummary(domain, stdout, stderr, null);
     }
 
-    public static TestSummary withException(String domain, CharSequence stdout, CharSequence stderr,
+    public static TestSummary withException(String domain, String stdout, String stderr,
             Throwable exception) {
         return new TestSummary(domain, stdout, stderr, exception);
     }
 
     public static TestSummary withChildren(String domain, Iterable<TestSummary> children) {
-        CharSequence stdout = null, stderr = null;
-        for (final var child : children) {
-            if (stdout == null) {
-                stdout = child.standardOutputDump;
-            } else {
-                stdout = JoinedCharSequence.join(stdout, child.standardOutputDump);
-            }
 
-            if (stderr == null) {
-                stderr = child.standardOutputDump;
-            } else {
-                stderr = JoinedCharSequence.join(stderr, child.standardErrorDump);
-            }
-        }
-
-        return new TestSummary(domain, stdout, stderr, children);
+        return new TestSummary(domain, null, null, children);
     }
 
-    private TestSummary(String domain, CharSequence stdout, CharSequence stderr, Object obj) {
+    private TestSummary(String domain, String stdout, String stderr, Object obj) {
         this.domain = domain;
         this.childrenOrException = obj;
         this.standardOutputDump = stdout;
@@ -40,14 +26,14 @@ public class TestSummary {
 
     public final String domain;
     private final Object childrenOrException;
-    private final CharSequence standardOutputDump;
-    private final CharSequence standardErrorDump;
+    private final String standardOutputDump;
+    private final String standardErrorDump;
 
-    public CharSequence standardOutputDump() {
+    public String standardOutputDump() {
         return this.standardOutputDump;
     }
 
-    public CharSequence standardErrorDump() {
+    public String standardErrorDump() {
         return this.standardErrorDump;
     }
 

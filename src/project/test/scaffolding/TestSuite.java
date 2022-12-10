@@ -9,7 +9,7 @@ public class TestSuite extends TestAgent {
         this.agents = agents;
     }
 
-    private final Iterable<TestAgent> agents;
+    public final Iterable<TestAgent> agents;
 
     @Override
     public TestSummary execute() {

@@ -1,6 +1,5 @@
 package project.scaffolding.debug;
 
-import java.io.IOException;
 import java.util.regex.Pattern;
 
 public class IndentedAppendable implements Appendable {
@@ -39,6 +38,14 @@ public class IndentedAppendable implements Appendable {
     public IndentedAppendable deindent() {
         this.indentLevel -= 1;
         return this;
+    }
+
+    public IndentedAppendable print(char c) {
+        return this.append(c);
+    }
+
+    public IndentedAppendable println(char c) {
+        return this.append(c).println();
     }
 
     public IndentedAppendable print(Object obj) {
@@ -85,7 +92,7 @@ public class IndentedAppendable implements Appendable {
                 this.flushIndent();
                 final var start = matcher.start();
                 final var end = matcher.end();
-                base.append(csq.subSequence(last, start));
+                base.append(csq.subSequence(last, start)).append(System.lineSeparator());
                 last = end;
                 this.indentPending = true;
             }
@@ -103,9 +110,13 @@ public class IndentedAppendable implements Appendable {
     }
 
     @Override
-    public IndentedAppendable append(char c) throws IOException {
+    public IndentedAppendable append(char c) {
         this.flushIndent();
-        this.append(c);
+        try {
+            this.base.append(c);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
         if (c == '\n') {
             this.indentPending = true;
         }

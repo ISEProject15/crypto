@@ -44,22 +44,22 @@ public class ReflectionUtil {
         final String resourceName = packageName.replace('.', '/');
         final ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         final URL root = classLoader.getResource(resourceName);
-        if(root == null) {
+        if (root == null) {
             return null;
         }
 
-        final Stream<String> stream = switch(root.getProtocol()) {
+        final Stream<String> stream = switch (root.getProtocol()) {
             case "file" -> {
                 yield visitAllFiles(new File(root.getFile()), null, new FileVisitor<String>() {
                     private String state;
-    
+
                     @Override
                     public boolean visit(String state, File file) {
                         final var filename = file.getName();
                         this.state = state == null ? "" : (state + "." + filename);
                         return file.isFile();
                     }
-    
+
                     @Override
                     public String state() {
                         return this.state;
@@ -70,7 +70,8 @@ public class ReflectionUtil {
                 try {
                     final var jar = ((JarURLConnection) root.openConnection()).getJarFile();
                     yield Collections.list(jar.entries()).stream().map(e -> e.getName())
-                            .filter(n -> n.startsWith(resourceName));
+                            .filter(n -> n.startsWith(resourceName) && n.endsWith(".class"))
+                            .map(n -> n.replace('/', '.'));
                 } catch (Exception e) {
                     yield Stream.empty();
                 }

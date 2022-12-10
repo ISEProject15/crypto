@@ -4,5 +4,6 @@
     "java.project.referencedLibraries": [
         "lib/**/*.jar"
     ],
-    "java.debug.settings.vmArgs": "-enableassertions"
+    "java.debug.settings.vmArgs": "-enableassertions",
+    "java.project.encoding": "setDefault"
 }

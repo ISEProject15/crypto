@@ -5,7 +5,7 @@ import project.lib.crypto.Cipher;
 import project.lib.crypto.CipherArgs;
 import project.lib.protocol.Ion;
 
-public class RSAPlain implements Cipher {
+public class RSAPlainChunked implements Cipher {
     private static final String identity = "RSAPlain";
 
     @Override
