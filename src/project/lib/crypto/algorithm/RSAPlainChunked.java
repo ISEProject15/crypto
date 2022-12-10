@@ -4,6 +4,7 @@ import static project.scaffolding.debug.BinaryDebug.*;
 
 import java.math.BigInteger;
 import java.util.Arrays;
+import java.util.Random;
 
 import project.lib.StreamBuffer;
 import project.lib.StreamUtil;
@@ -14,7 +15,33 @@ import project.test.RSAKeyBundle;
 // RSA crypto algorithm encrypt chunk by chunk 
 public class RSAPlainChunked {
     public static RSAKeyBundle generateKey(int k) {
-        return RSAPlain.generateKey(k);
+        if (k <= 8) {
+            return null;
+        }
+        final var one = BigInteger.ONE;
+        final var random = new Random();
+        final var p = BigInteger.probablePrime(k, random);
+        // p must not equal to q
+        BigInteger prime = null;
+        do {
+            prime = BigInteger.probablePrime(k, random);
+        } while (p.equals(prime));
+        final var q = prime;
+
+        final var modulo = p.multiply(q);
+        final var phi = p.subtract(one).multiply(q.subtract(one));
+        final var bitlen = phi.bitLength();
+        BigInteger exponent = null;
+        while (true) {
+            final var rnd = new BigInteger(bitlen, random);
+            exponent = rnd.mod(phi);
+            if (exponent.gcd(phi).equals(BigInteger.ONE)) {
+                break;
+            }
+        }
+        final var secret = exponent.modInverse(phi);
+
+        return RSAKeyBundle.of(modulo, secret, exponent);
     }
 
     public static Transformer encripter(BigInteger exponent, BigInteger modulo) {
@@ -73,12 +100,12 @@ public class RSAPlainChunked {
         @Override
         public int maximumOutputSize(int sourceLength) {
             final var len = StreamUtil.lenof(sourceLength);
-            final var total = this.blockRemaining + len;
-            if (StreamUtil.isLast(sourceLength)) {
-                return IntMath.ceil(total, this.plainBlock.length) * this.codeBlockLength;
-            } else {
-                return total / this.plainBlock.length * this.codeBlockLength;
-            }
+            final var totalRemaining = this.blockRemaining + len;
+            final var toBeWrittenBlockCount = StreamUtil.isLast(sourceLength)
+                    ? IntMath.ceil(totalRemaining, this.plainBlock.length)
+                    : totalRemaining / this.plainBlock.length;
+
+            return toBeWrittenBlockCount * this.codeBlockLength + this.buffer.length();
         }
 
         @Override
@@ -176,12 +203,12 @@ public class RSAPlainChunked {
         @Override
         public int maximumOutputSize(int sourceLength) {
             final var len = StreamUtil.lenof(sourceLength);
-            final var total = this.blockRemaining + len;
-            if (StreamUtil.isLast(sourceLength)) {
-                return IntMath.ceil(total, this.codeBlock.length) * this.plainBlockLength;
-            } else {
-                return total / this.codeBlock.length * this.plainBlockLength;
-            }
+            final var totalRemaining = this.blockRemaining + len;
+            final var toBeWrittenBlockCount = StreamUtil.isLast(sourceLength)
+                    ? IntMath.ceil(totalRemaining, this.codeBlock.length)
+                    : totalRemaining / this.codeBlock.length;
+
+            return toBeWrittenBlockCount * this.plainBlockLength + buffer.length();
         }
 
         @Override
@@ -222,6 +249,10 @@ public class RSAPlainChunked {
             var read = 0;
 
             while (true) {
+                // 1. copy source to block in order to fill block
+                // 2. if input is not last and block is not filled then return
+                // 3. transform block then write to buffer
+
                 final var len = Math.min(length - read, codeBlockLength - blockRemaining);
                 System.arraycopy(source, offset + read, block, blockRemaining, len);
                 blockRemaining += len;
