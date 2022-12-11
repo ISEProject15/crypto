@@ -1,5 +1,6 @@
 package project.lib.scaffolding.collections;
 
+import java.lang.reflect.Array;
 import java.util.Arrays;
 
 public class ArrayUtil {
@@ -51,5 +52,17 @@ public class ArrayUtil {
             Arrays.fill((boolean[]) array, from, to, false);
             return;
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    public static <T> T resize(T array, int size) {
+        if (array == null) {
+            return null;
+        }
+        final var cls = array.getClass();
+        final var newarr = (T) Array.newInstance(cls.componentType(), size);
+        final var minLen = Math.min(size, Array.getLength(array));
+        System.arraycopy(array, 0, newarr, 0, minLen);
+        return newarr;
     }
 }

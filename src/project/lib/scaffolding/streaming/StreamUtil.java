@@ -1,4 +1,4 @@
-package project.lib;
+package project.lib.scaffolding.streaming;
 
 public class StreamUtil {
     public static int lenof(int length) {

@@ -4,6 +4,8 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 
+import project.lib.scaffolding.streaming.StreamUtil;
+
 //入力用のストリームを表すインターフェイス
 public interface InletStream extends Closeable {
     public static InletStream from(InputStream source) {

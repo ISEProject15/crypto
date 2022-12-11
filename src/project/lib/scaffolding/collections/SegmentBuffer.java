@@ -2,7 +2,7 @@ package project.lib.scaffolding.collections;
 
 import java.lang.reflect.Array;
 
-import project.lib.StreamUtil;
+import project.lib.scaffolding.streaming.StreamUtil;
 
 public class SegmentBuffer<T> extends Sequence<T> {
     public SegmentBuffer(SegmentBufferStrategy strategy, Class<T> cls) {

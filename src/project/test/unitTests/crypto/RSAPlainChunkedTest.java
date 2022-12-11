@@ -1,8 +1,9 @@
 package project.test.unitTests.crypto;
 
 import java.math.BigInteger;
-import project.lib.StreamUtil;
+
 import project.lib.crypto.algorithm.RSAPlainChunked;
+import project.lib.scaffolding.streaming.StreamUtil;
 import project.scaffolding.debug.BinaryDebug;
 import project.test.scaffolding.TestAnnotation;
 

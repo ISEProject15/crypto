@@ -5,6 +5,10 @@ import java.util.regex.Pattern;
 public class IndentedAppendable implements Appendable {
     private static final Pattern newLinePattern = Pattern.compile("\\r?\\n");
 
+    public static IndentedAppendable create(String indent) {
+        return new IndentedAppendable(new StringBuilder(), indent);
+    }
+
     public static IndentedAppendable create(Appendable base, String indent) {
         return new IndentedAppendable(base, indent);
     }
@@ -121,6 +125,11 @@ public class IndentedAppendable implements Appendable {
             this.indentPending = true;
         }
         return this;
+    }
+
+    @Override
+    public String toString() {
+        return this.base.toString();
     }
 
     private void flushIndent() {

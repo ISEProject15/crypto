@@ -7,9 +7,9 @@ import java.util.Arrays;
 import java.util.Random;
 
 import project.lib.StreamBuffer;
-import project.lib.StreamUtil;
 import project.lib.Transformer;
 import project.lib.scaffolding.IntMath;
+import project.lib.scaffolding.streaming.StreamUtil;
 import project.test.RSAKeyBundle;
 
 // RSA crypto algorithm encrypt chunk by chunk 
