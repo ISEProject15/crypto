@@ -114,7 +114,8 @@ public class BinaryDebug {
         final var builder = new StringBuilder();
         final var iter = sequence.iterator();
         var first = true;
-        while (iter.next()) {
+        while (iter.hasNext()) {
+            iter.move();
             if (first) {
                 first = false;
             } else {

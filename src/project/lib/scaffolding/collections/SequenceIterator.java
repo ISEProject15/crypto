@@ -43,29 +43,35 @@ public final class SequenceIterator<T> {
         return this.length;
     }
 
-    public boolean next() {
+    public boolean hasNext() {
+        if (this.segment == null) {// first call
+            return this.firstSegment != null;
+        }
+        return this.segment.next() != null;
+    }
+
+    public void move() {
         final var last = this.lastSegment;
         if (this.segment == null) {// first call
             final var first = this.firstSegment;
             if (first == null) {
-                return false;
+                throw new IllegalStateException();
             }
             this.segment = first;
             this.offset = firstIndex + first.offset();
             this.length = first == last ? this.lastIndex : first.length();
-            return true;
+            return;
         }
 
         final var next = this.segment.next();
 
         if (next == null) {
-            return false;
+            throw new IllegalStateException();
         }
         this.segment = next;
         // next is absolutely not first segment, so we not have to check first index
         this.offset = next.offset();
         this.length = next == last ? this.lastIndex : next.length();
-        return true;
     }
 
 }
