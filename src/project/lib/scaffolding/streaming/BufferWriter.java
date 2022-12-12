@@ -36,4 +36,8 @@ public interface BufferWriter<T> {
             }
         }
     }
+
+    public default BufferWriter<T> transform(Transformer<T> transformer) {
+        return new TransformedBufferWriter<>(this, transformer);
+    }
 }

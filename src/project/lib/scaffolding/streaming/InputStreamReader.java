@@ -6,7 +6,7 @@ import java.io.InputStream;
 import project.lib.StreamBuffer;
 import project.lib.scaffolding.collections.Sequence;
 
-public class InputStreamReader implements StreamReader {
+public class InputStreamReader implements StreamReader<byte[]> {
     public InputStreamReader(InputStream stream) {
         this.stream = stream;
         this.buffer = new StreamBuffer();

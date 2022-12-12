@@ -4,32 +4,29 @@ import java.lang.reflect.Array;
 
 import project.lib.scaffolding.ArrayPool;
 
-public class DefaultPooledBufferWriter<T> implements BufferWriter<T> {
-    public DefaultPooledBufferWriter(ArrayPool<T> pool, BufferWriterFinishedCallback<T> callback) {
+public abstract class PooledBufferWriterBase<T> implements BufferWriter<T> {
+    protected PooledBufferWriterBase(ArrayPool<T> pool) {
         this.pool = pool;
-        this.callback = callback;
     }
 
     private final ArrayPool<T> pool;
-    private final BufferWriterFinishedCallback<T> callback;
     private T stagedBuffer;
     private int stagedLength;
 
-    private void throwIfAlreadyStaged() {
+    private final void throwIfAlreadyStaged() {
         if (this.stagedBuffer != null) {
             throw new IllegalStateException("buffer was already staged");
         }
     }
 
-    private void throwIfNotStaged() {
+    private final void throwIfNotStaged() {
         if (this.stagedBuffer == null) {
             throw new IllegalStateException("buffer is not staged");
         }
     }
 
     @Override
-
-    public void stage(int minimumLength) {
+    public final void stage(int minimumLength) {
         this.throwIfAlreadyStaged();
         final var buffer = pool.rent(minimumLength);
         this.stagedBuffer = buffer;
@@ -37,7 +34,7 @@ public class DefaultPooledBufferWriter<T> implements BufferWriter<T> {
     }
 
     @Override
-    public boolean tryStage(int minimumLength) {
+    public final boolean tryStage(int minimumLength) {
         this.throwIfAlreadyStaged();
         final var buffer = pool.tryRent(minimumLength);
         if (buffer == null) {
@@ -49,30 +46,33 @@ public class DefaultPooledBufferWriter<T> implements BufferWriter<T> {
     }
 
     @Override
-    public T stagedBuffer() {
+    public final T stagedBuffer() {
         this.throwIfNotStaged();
         return this.stagedBuffer;
     }
 
     @Override
-    public int stagedOffset() {
+    public final int stagedOffset() {
         this.throwIfNotStaged();
         return 0;
     }
 
     @Override
-    public int stagedLength() {
+    public final int stagedLength() {
         this.throwIfNotStaged();
         return this.stagedLength;
     }
 
     @Override
-    public void finish(int written) {
+    public final void finish(int written) {
         this.throwIfNotStaged();
         if (this.stagedLength < StreamUtil.lenof(written)) {
-            throw new IllegalArgumentException();
+            throw new IllegalArgumentException("written count should less than or equal to staged buffer length");
         }
-        this.callback.finished(this.stagedBuffer, 0, written);
+        final var buffer = this.stagedBuffer;
+        this.stagedBuffer = null;
+        this.onFinish(buffer, 0, StreamUtil.lenof(written));
     }
 
+    protected abstract void onFinish(T buffer, int offset, int length);
 }

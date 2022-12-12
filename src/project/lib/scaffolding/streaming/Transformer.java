@@ -2,10 +2,10 @@ package project.lib.scaffolding.streaming;
 
 import project.lib.scaffolding.collections.Sequence;
 
-public interface Transformer {
-    public BufferWriter<byte[]> writer();
+public interface Transformer<T> {
+    public BufferWriter<T> writer();
 
-    public Sequence<byte[]> read();
+    public Sequence<T> read();
 
     public void advance(int consumed);
 

@@ -1,49 +1,43 @@
 package project.lib.scaffolding.streaming;
 
-import project.lib.scaffolding.ByteArrayPool;
-
-public class TransformedBufferWriter implements BufferWriter<byte[]> {
-    TransformedBufferWriter(BufferWriter<byte[]> writer, Transformer transformer) {
+class TransformedBufferWriter<T> implements BufferWriter<T> {
+    TransformedBufferWriter(BufferWriter<T> writer, Transformer<T> transformer) {
         this.writer = writer;
         this.transformer = transformer;
-        this.bufferWriter = new DefaultPooledBufferWriter<byte[]>(ByteArrayPool.instance(), this::onFinished);
     }
 
-    private final BufferWriter<byte[]> writer;
-    private final Transformer transformer;
-    private final DefaultPooledBufferWriter<byte[]> bufferWriter;
-
-    private void onFinished(byte[] buffer, int offset, int length) {
-        
-    }
+    private final BufferWriter<T> writer;
+    private final Transformer<T> transformer;
 
     @Override
     public void stage(int minimumLength) {
-        this.bufferWriter.stage(minimumLength);
+        this.transformer.writer().stage(minimumLength);
     }
 
     @Override
     public boolean tryStage(int minimumLength) {
-        return this.bufferWriter.tryStage(minimumLength);
+        return this.transformer.writer().tryStage(minimumLength);
     }
 
     @Override
-    public byte[] stagedBuffer() {
-        return this.bufferWriter.stagedBuffer();
+    public T stagedBuffer() {
+        return this.transformer.writer().stagedBuffer();
     }
 
     @Override
     public int stagedOffset() {
-        return this.bufferWriter.stagedOffset();
+        return this.transformer.writer().stagedOffset();
     }
 
     @Override
     public int stagedLength() {
-        return this.bufferWriter.stagedLength();
+        return this.transformer.writer().stagedLength();
     }
 
     @Override
     public void finish(int written) {
-        this.bufferWriter.finish(written);
+        this.transformer.writer().finish(written);
+        this.writer.write(this.transformer.read(), this.transformer.completed());
     }
+
 }

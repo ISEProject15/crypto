@@ -4,25 +4,25 @@ import java.io.IOException;
 
 import project.lib.scaffolding.collections.Sequence;
 
-class TransformedStreamReader implements StreamReader {
-    TransformedStreamReader(StreamReader reader, Transformer transformer) {
+class TransformedStreamReader<T> implements StreamReader<T> {
+    TransformedStreamReader(StreamReader<T> reader, Transformer<T> transformer) {
         this.reader = reader;
         this.transformer = transformer;
     }
 
-    private final StreamReader reader;
-    private final Transformer transformer;
+    private final StreamReader<T> reader;
+    private final Transformer<T> transformer;
 
     @Override
     public void advance(int consumed) throws IOException {
-        transformer.advance(consumed);
+        this.transformer.advance(consumed);
     }
 
     @Override
-    public Sequence<byte[]> read(int least) throws IOException {
+    public Sequence<T> read(int least) throws IOException {
         final var transformer = this.transformer;
         final var writer = transformer.writer();
-        while (least > transformer.rest()) {
+        while (transformer.rest() < least) {
             final var len = Math.max(transformer.prefferedInputSize(), least);
             final var raw = reader.read(len);
             final var completed = reader.completed();
