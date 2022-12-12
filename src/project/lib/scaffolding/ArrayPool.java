@@ -5,6 +5,8 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.concurrent.locks.ReentrantLock;
 
+import project.lib.scaffolding.collections.ArrayUtil;
+
 public class ArrayPool<T> {
     public ArrayPool(Class<T> cls) {
         this.pool = new TreeMap<>();
@@ -45,6 +47,7 @@ public class ArrayPool<T> {
     public void back(T array) {
         try {
             this.lock.lock();
+            ArrayUtil.clear(array, 0, Array.getLength(array));
             this.pool.put(Array.getLength(array), array);
         } finally {
             this.lock.unlock();

@@ -3,6 +3,10 @@ package project.lib.scaffolding;
 public final class ByteArrayPool {
     private static final ArrayPool<byte[]> pool = new ArrayPool<>(byte[].class);
 
+    public static ArrayPool<byte[]> instance() {
+        return pool;
+    }
+
     public static byte[] rent(int minimumLength) {
         return pool.rent(minimumLength);
     }

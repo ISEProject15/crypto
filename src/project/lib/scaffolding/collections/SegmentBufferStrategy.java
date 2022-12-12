@@ -1,29 +1,36 @@
 package project.lib.scaffolding.collections;
 
-public interface SegmentBufferStrategy {
+import project.lib.scaffolding.ArrayPool;
 
-    public static final SegmentBufferStrategy defaultStrategy = new SegmentBufferStrategy() {
-        @Override
-        public int nextSegmentSize(int required) {
-            if (required <= 16)
-                return 16;
+public interface SegmentBufferStrategy<T> {
+    public static <T> SegmentBufferStrategy<T> defaultPooledStrategy(ArrayPool<T> pool) {
+        return new SegmentBufferStrategy<T>() {
+            {
+                this._pool = pool;
+            }
+            private final ArrayPool<T> _pool;
 
-            if (required <= 32)
-                return 32;
+            @Override
+            public T requireSegmentBuffer(int required) {
+                return this._pool.rent(required);
+            }
 
-            if (required <= 64)
-                return 64;
+            @Override
+            public T tryRequireSegmentBuffer(int required) {
+                return this._pool.tryRent(required);
+            }
 
-            if (required <= 128)
-                return 128;
+            @Override
+            public void backSegmentBuffer(T buffer) {
+                this._pool.back(buffer);
+            }
 
-            if (required <= 256)
-                return 256;
+        };
+    }
 
-            return required;
-        }
-    };
+    public T requireSegmentBuffer(int required);
 
-    // returns next segment size. MUST greater than required.
-    public int nextSegmentSize(int required);
+    public T tryRequireSegmentBuffer(int required);
+
+    public void backSegmentBuffer(T buffer);
 }

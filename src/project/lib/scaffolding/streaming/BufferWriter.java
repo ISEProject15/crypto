@@ -1,4 +1,4 @@
-package project.lib.scaffolding.collections;
+package project.lib.scaffolding.streaming;
 
 public interface BufferWriter<T> {
     public void stage(int minimumLength);

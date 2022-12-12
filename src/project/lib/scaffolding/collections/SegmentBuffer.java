@@ -2,10 +2,11 @@ package project.lib.scaffolding.collections;
 
 import java.lang.reflect.Array;
 
+import project.lib.scaffolding.streaming.BufferWriter;
 import project.lib.scaffolding.streaming.StreamUtil;
 
 public class SegmentBuffer<T> extends Sequence<T> {
-    public SegmentBuffer(SegmentBufferStrategy strategy, Class<T> cls) {
+    public SegmentBuffer(SegmentBufferStrategy<T> strategy, Class<T> cls) {
         super(cls);
         if (strategy == null) {
             throw new IllegalArgumentException();
@@ -14,11 +15,7 @@ public class SegmentBuffer<T> extends Sequence<T> {
         this.writer = new Writer();
     }
 
-    public SegmentBuffer(Class<T> cls) {
-        this(SegmentBufferStrategy.defaultStrategy, cls);
-    }
-
-    public final SegmentBufferStrategy strategy;
+    public final SegmentBufferStrategy<T> strategy;
     private Segment firstSegment;
     private int firstIndex;
     private Segment lastSegment;
@@ -69,9 +66,13 @@ public class SegmentBuffer<T> extends Sequence<T> {
             if (!writer.tryStage(0)) {
                 writer.stage(rest);
             }
-            final var w = writer.staged.write(source, written + offset, rest);
-            written += w;
-            writer.finish(w);
+            final var buffer = writer.stagedBuffer();
+            final var stagedLength = writer.stagedLength();
+            final var stagedOffset = writer.stagedOffset();
+            final var toWrite = Math.min(rest, stagedLength);
+            System.arraycopy(source, offset, buffer, stagedOffset, toWrite);
+            written += toWrite;
+            writer.finish(toWrite);
         }
     }
 
@@ -84,10 +85,10 @@ public class SegmentBuffer<T> extends Sequence<T> {
         }
 
         final var lastSegment = this.lastSegment;
+        final var strategy = this.strategy;
         var written = 0;
         var segment = this.firstSegment;
         var segmentOffset = this.firstIndex;
-        final var writer = this.writer;
 
         while (segment != null && written < length) {
             final var rest = length - written;
@@ -98,7 +99,8 @@ public class SegmentBuffer<T> extends Sequence<T> {
 
             if (segmentLength <= rest) {
                 final var next = segment.next;
-                writer.pushPool(segment);
+                strategy.backSegmentBuffer(segment.buffer);
+
                 segment = next;
                 segmentOffset = 0;
             } else {
@@ -134,18 +136,19 @@ public class SegmentBuffer<T> extends Sequence<T> {
         if (amount <= 0) {
             return;
         }
+
         final var lastSegment = this.lastSegment;
+        final var strategy = this.strategy;
         var discarded = 0;
         var segment = this.firstSegment;
         var offset = this.firstIndex;
-        final var writer = this.writer;
         while (segment != null && discarded < amount) {
             final var rest = amount - discarded;
             final var length = segment == lastSegment ? this.lastIndex : segment.length;
             final var toDiscard = Math.min(length, rest);
             if (length <= rest) {
                 final var next = segment.next;
-                writer.pushPool(segment);
+                strategy.backSegmentBuffer(segment.buffer);
                 segment = next;
                 offset = 0;
             } else {
@@ -162,56 +165,39 @@ public class SegmentBuffer<T> extends Sequence<T> {
         this.length -= discarded;
     }
 
-    private Class<?> elementCls() {
-        return this.bufferClass.componentType();
-    }
-
     private final class Writer implements BufferWriter<T> {
-        private Segment pool;
-        private Segment staged;
+        private T stagedBuffer;
+        private int stagedLength;
 
-        public void pushPool(Segment segment) {
-            segment.next = this.pool;
-            segment.clear();
-            this.pool = segment;
+        private void throwIfAlreadyStaged() {
+            if (this.stagedBuffer != null) {
+                throw new IllegalStateException("buffer was already staged");
+            }
+        }
+
+        private void throwIfNotStaged() {
+            if (this.stagedBuffer == null) {
+                throw new IllegalStateException("buffer is not staged");
+            }
         }
 
         // put segment that is greater than capacity into stage
         public void stage(int capacity) {
-            capacity = Math.max(capacity, strategy.nextSegmentSize(0));
-            if (!this.tryStage(capacity)) {
-                final var size = strategy.nextSegmentSize(capacity);
-                final var staged = new Segment(size);
-                this.staged = staged;
-            }
+            this.throwIfAlreadyStaged();
+            final var buffer = strategy.requireSegmentBuffer(capacity);
+            this.stagedLength = Array.getLength(buffer);
+            this.stagedBuffer = buffer;
         }
 
         // try put pooled segment that is greater than capacity into stage
         public boolean tryStage(int capacity) {
-            if (this.staged != null) {
-                throw new IllegalStateException();
-            }
-            Segment prev = null;
-            var segment = this.pool;
-            while (segment != null) {
-                if (segment.length >= capacity) {
-                    break;
-                }
-                prev = segment;
-                segment = segment.next;
-            }
-
-            if (segment == null) {
+            this.throwIfAlreadyStaged();
+            final var buffer = strategy.tryRequireSegmentBuffer(capacity);
+            if (buffer == null) {
                 return false;
             }
-
-            if (prev == null) {
-                this.pool = segment.next;
-            } else {
-                prev.next = segment.next;
-            }
-            this.staged = segment;
-            segment.next = null;
+            this.stagedLength = Array.getLength(buffer);
+            this.stagedBuffer = buffer;
             return true;
         }
 
@@ -220,34 +206,27 @@ public class SegmentBuffer<T> extends Sequence<T> {
             if (length < 0) {
                 throw new IllegalArgumentException();
             }
-            final var staged = this.staged;
-            if (staged == null) {
-                throw new IllegalStateException();
-            }
-            this.staged = null;
-            if (staged.length < length) {
+            this.throwIfNotStaged();
+            final var buffer = this.stagedBuffer;
+            if (Array.getLength(buffer) < length) {
                 throw new IllegalStateException();
             }
             if (length == 0) {// if no data written, return staged to pool
-                staged.next = this.pool;
-                this.pool = staged;
+                strategy.backSegmentBuffer(this.stagedBuffer);
+                this.stagedBuffer = null;
                 return;
             }
-            final var rest = staged.length - length;
-            staged.length = length;
-            if (rest > 0) {// segment has extra space
-                final var p = new Segment(staged.buffer, length, rest);
-                p.next = this.pool;
-                this.pool = p;
-            }
+
+            final var segment = new Segment(buffer, 0, StreamUtil.lenof(length));
 
             if (firstSegment == null) {// sequence has no segment
-                firstSegment = lastSegment = staged;
+                firstSegment = lastSegment = segment;
                 firstIndex = 0;
                 lastIndex = length;
             } else {
-                lastSegment.next = staged;
-                lastSegment = staged;
+                assert lastSegment != null : "if sequence is not empty, lastSegment should not null";
+                lastSegment.next = segment;
+                lastSegment = segment;
                 lastIndex = length;
             }
 
@@ -256,37 +235,26 @@ public class SegmentBuffer<T> extends Sequence<T> {
 
         @Override
         public T stagedBuffer() {
-            if (this.staged == null) {
-                throw new IllegalStateException();
-            }
-            return this.staged.buffer;
+            this.throwIfNotStaged();
+            return this.stagedBuffer;
         }
 
         @Override
         public int stagedLength() {
-            if (this.staged == null) {
-                throw new IllegalStateException();
-            }
-            return this.staged.length;
+            this.throwIfNotStaged();
+            return this.stagedLength;
         }
 
         @Override
         public int stagedOffset() {
-            if (this.staged == null) {
-                throw new IllegalStateException();
-            }
-            return this.staged.offset;
+            this.throwIfNotStaged();
+
+            return 0;
         }
 
     }
 
     private final class Segment extends SequenceSegment<T> {
-        @SuppressWarnings("unchecked")
-        Segment(int capacity) {
-            super((T) Array.newInstance(elementCls(), capacity));
-            this.length = capacity;
-        }
-
         Segment(T source, int offset, int length) {
             super(source);
             this.offset = offset;
@@ -310,21 +278,6 @@ public class SegmentBuffer<T> extends Sequence<T> {
         @Override
         public int length() {
             return this.length;
-        }
-
-        public void clear() {
-            ArrayUtil.clear(this.buffer, this.offset, this.length + this.offset);
-        }
-
-        public int write(T source, int offset, int length) {
-            length = StreamUtil.lenof(length);
-            final var sourceLength = Array.getLength(source);
-            if (length + offset > sourceLength) {
-                throw new IllegalArgumentException();
-            }
-            final var len = Math.min(length, this.length);
-            System.arraycopy(source, offset, this.buffer, this.offset, len);
-            return len;
         }
     }
 }

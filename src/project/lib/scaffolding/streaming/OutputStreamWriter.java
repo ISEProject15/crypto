@@ -3,7 +3,6 @@ package project.lib.scaffolding.streaming;
 import java.io.OutputStream;
 
 import project.lib.scaffolding.ByteArrayPool;
-import project.lib.scaffolding.collections.BufferWriter;
 
 public class OutputStreamWriter implements BufferWriter<byte[]> {
     public OutputStreamWriter(OutputStream stream) {
