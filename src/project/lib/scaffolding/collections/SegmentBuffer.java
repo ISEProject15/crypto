@@ -203,12 +203,10 @@ public class SegmentBuffer<T> extends Sequence<T> {
 
         @Override
         public void finish(int length) {
-            if (length < 0) {
-                throw new IllegalArgumentException();
-            }
             this.throwIfNotStaged();
+            length = StreamUtil.lenof(length);
             final var buffer = this.stagedBuffer;
-            if (Array.getLength(buffer) < length) {
+            if (this.stagedLength < length) {
                 throw new IllegalStateException();
             }
             if (length == 0) {// if no data written, return staged to pool
