@@ -10,7 +10,7 @@ public class StreamBuffer extends SegmentBuffer<byte[]> implements InletStream, 
     }
 
     public StreamBuffer(SegmentBufferStrategy<byte[]> strategy) {
-        super(strategy, byte[].class);
+        super(strategy);
     }
 
     @Override

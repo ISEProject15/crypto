@@ -10,13 +10,13 @@ import project.lib.scaffolding.collections.ArrayUtil;
 public class ArrayPool<T> {
     public ArrayPool(Class<T> cls) {
         this.pool = new TreeMap<>();
-        this.cls = cls;
+        this.arrayClass = cls;
         this.lock = new ReentrantLock(true);
     }
 
     private final SortedMap<Integer, T> pool;
-    private final Class<T> cls;
     private final ReentrantLock lock;
+    public final Class<T> arrayClass;
 
     @SuppressWarnings("unchecked")
     public T rent(int minimumLength) {
@@ -24,7 +24,7 @@ public class ArrayPool<T> {
         if (arr != null) {
             return arr;
         }
-        return (T) Array.newInstance(cls.componentType(), minimumLength);
+        return (T) Array.newInstance(arrayClass.componentType(), minimumLength);
     }
 
     public T tryRent(int minimumLength) {

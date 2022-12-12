@@ -15,6 +15,14 @@ public interface BufferWriter<T> {
 
     public void finish(int written);
 
+    public default void write(T source, int offset, int length) {
+        this.stage(StreamUtil.lenof(length));
+        final var buf = this.stagedBuffer();
+        final var off = this.stagedOffset();
+        System.arraycopy(source, offset, buf, off, StreamUtil.lenof(length));
+        this.finish(length);
+    }
+
     public default void write(Sequence<T> sequence, boolean completed) {
         final var iter = sequence.iterator();
         while (iter.hasNext()) {

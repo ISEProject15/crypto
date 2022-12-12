@@ -25,6 +25,11 @@ public interface SegmentBufferStrategy<T> {
                 this._pool.back(buffer);
             }
 
+            @Override
+            public Class<T> bufferClass() {
+                return this._pool.arrayClass;
+            }
+
         };
     }
 
@@ -33,4 +38,6 @@ public interface SegmentBufferStrategy<T> {
     public T tryRequireSegmentBuffer(int required);
 
     public void backSegmentBuffer(T buffer);
+
+    public Class<T> bufferClass();
 }

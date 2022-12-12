@@ -71,8 +71,8 @@ public abstract class PooledBufferWriterBase<T> implements BufferWriter<T> {
         }
         final var buffer = this.stagedBuffer;
         this.stagedBuffer = null;
-        this.onFinish(buffer, 0, StreamUtil.lenof(written));
+        this.onFinish(buffer, written);
     }
 
-    protected abstract void onFinish(T buffer, int offset, int length);
+    protected abstract void onFinish(T buffer, int length);
 }

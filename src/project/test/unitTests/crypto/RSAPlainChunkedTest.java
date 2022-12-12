@@ -2,6 +2,7 @@ package project.test.unitTests.crypto;
 
 import java.math.BigInteger;
 
+import project.lib.crypto.algorithm.RSA;
 import project.lib.crypto.algorithm.RSAPlainChunked;
 import project.lib.scaffolding.streaming.StreamUtil;
 import project.scaffolding.debug.BinaryDebug;
@@ -27,7 +28,7 @@ class RSAPlainChunkedTest {
     @TestAnnotation(order = 2)
     void plain_block_should_less_than_modulo() {
         final var bundle = RSAPlainChunked.generateKey(33);
-        final var plainBlockLength = RSAPlainChunked.plainBlockLength(bundle.modulo);
+        final var plainBlockLength = RSA.plainBlockLength(bundle.modulo);
         // 2 ^ (plainBlockLength * 8) - 1
         final var max = BigInteger.ONE.shiftLeft(plainBlockLength * 8).subtract(BigInteger.ONE);
         assert bundle.modulo.compareTo(max) > 0;
@@ -36,7 +37,7 @@ class RSAPlainChunkedTest {
     @TestAnnotation(order = 3)
     void code_block_should_greater_than_modulo() {
         final var bundle = RSAPlainChunked.generateKey(33);
-        final var codeBlockLength = RSAPlainChunked.codeBlockLength(bundle.modulo);
+        final var codeBlockLength = RSA.codeBlockLength(bundle.modulo);
         // 2 ^ (plainBlockLength * 8) - 1
         final var max = BigInteger.ONE.shiftLeft(codeBlockLength * 8).subtract(BigInteger.ONE);
         assert bundle.modulo.compareTo(max) < 0;
@@ -52,7 +53,7 @@ class RSAPlainChunkedTest {
         System.out.println("written: " + written);
         System.out.println(BinaryDebug.dumpHex(encrypted));
         assert written < 0 : "maximumOutputSize " + encrypted.length + " should greater than output";
-        assert StreamUtil.lenof(written) % RSAPlainChunked.codeBlockLength(bundle.modulo) == 0
+        assert StreamUtil.lenof(written) % RSA.codeBlockLength(bundle.modulo) == 0
                 : "encrypted binary length should multiple of code block length";
     }
 
@@ -74,7 +75,7 @@ class RSAPlainChunkedTest {
         System.out.println(BinaryDebug.dumpHex(dec));
 
         assert decWritten < 0 : "maximumOutputSize " + enc.length + " should greater than output";
-        assert StreamUtil.lenof(decWritten) % RSAPlainChunked.plainBlockLength(bundle.modulo) == 0
+        assert StreamUtil.lenof(decWritten) % RSA.plainBlockLength(bundle.modulo) == 0
                 : "decrypted binary length should multiple of plain block length";
 
         for (var i = 0; i < Math.min(plain.length, StreamUtil.lenof(decWritten)); ++i) {

@@ -6,11 +6,8 @@ import project.lib.scaffolding.streaming.BufferWriter;
 import project.lib.scaffolding.streaming.StreamUtil;
 
 public class SegmentBuffer<T> extends Sequence<T> {
-    public SegmentBuffer(SegmentBufferStrategy<T> strategy, Class<T> cls) {
-        super(cls);
-        if (strategy == null) {
-            throw new IllegalArgumentException();
-        }
+    public SegmentBuffer(SegmentBufferStrategy<T> strategy) {
+        super(strategy.bufferClass());
         this.strategy = strategy;
         this.writer = new Writer();
     }
@@ -206,12 +203,12 @@ public class SegmentBuffer<T> extends Sequence<T> {
             this.throwIfNotStaged();
             length = StreamUtil.lenof(length);
             final var buffer = this.stagedBuffer;
+            this.stagedBuffer = null;
             if (this.stagedLength < length) {
                 throw new IllegalStateException();
             }
             if (length == 0) {// if no data written, return staged to pool
                 strategy.backSegmentBuffer(this.stagedBuffer);
-                this.stagedBuffer = null;
                 return;
             }
 

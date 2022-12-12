@@ -49,7 +49,7 @@ public interface InletStream extends Closeable {
         final var writer = buffer.writer();
 
         while (true) {
-            writer.stage(this.preferredBufferSize());
+            writer.stage(Math.max(this.preferredBufferSize(), 16));
             final var written = this.read(writer.stagedBuffer(), writer.stagedOffset(), writer.stagedLength());
             writer.finish(StreamUtil.lenof(written));
 
