@@ -4,10 +4,13 @@ import java.math.BigInteger;
 
 import project.lib.scaffolding.ByteArrayPool;
 import project.lib.scaffolding.streaming.BlockTransformerBase;
-import project.lib.scaffolding.streaming.StreamUtil;
 import project.lib.scaffolding.streaming.Transformer;
 
-public class RSAPlainChunked {
+public final class RSAPlainChunked {
+    private RSAPlainChunked() {
+
+    }
+
     public static Transformer<byte[]> encrypter(BigInteger exponent, BigInteger modulo) {
         return new Encrypter(exponent, modulo);
     }
@@ -29,10 +32,9 @@ public class RSAPlainChunked {
         private final BigInteger modulo;
 
         @Override
-        protected void transform(byte[] buffer, int offset, int length) {
-            assert StreamUtil.lenof(length) == this.blockLength;
+        protected void transform(byte[] buffer, int offset, boolean isLast) {
             final var codeBlockLength = this.codeBlockLength;
-            final var plain = new BigInteger(1, buffer, offset, StreamUtil.lenof(length));
+            final var plain = new BigInteger(1, buffer, offset, this.blockLength);
             final var code = plain.modPow(this.exponent, this.modulo);
             final var bin = code.toByteArray();
             final var writer = this.buffer.writer();
@@ -41,7 +43,7 @@ public class RSAPlainChunked {
             final var len = Math.min(codeBlockLength, bin.length);
             final var off = bin.length - len;
             System.arraycopy(bin, off, writer.stagedBuffer(), writer.stagedOffset() + codeBlockLength - len, len);
-            if (StreamUtil.isLast(length)) {
+            if (isLast) {
                 writer.finish(~codeBlockLength);
                 this.markCompleted();
             } else {
@@ -63,10 +65,9 @@ public class RSAPlainChunked {
         private final BigInteger modulo;
 
         @Override
-        protected void transform(byte[] buffer, int offset, int length) {
-            assert StreamUtil.lenof(length) == this.blockLength;
+        protected void transform(byte[] buffer, int offset, boolean isLast) {
             final var plainBlockLength = this.plainBlockLength;
-            final var code = new BigInteger(1, buffer, offset, StreamUtil.lenof(length));
+            final var code = new BigInteger(1, buffer, offset, this.blockLength);
             final var plain = code.modPow(this.secret, this.modulo);
             final var bin = plain.toByteArray();
             final var writer = this.buffer.writer();
@@ -75,7 +76,7 @@ public class RSAPlainChunked {
             final var len = Math.min(plainBlockLength, bin.length);
             final var off = bin.length - len;
             System.arraycopy(bin, off, writer.stagedBuffer(), writer.stagedOffset() + plainBlockLength - len, len);
-            if (StreamUtil.isLast(length)) {
+            if (isLast) {
                 writer.finish(~plainBlockLength);
                 this.markCompleted();
             } else {

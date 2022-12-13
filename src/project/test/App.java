@@ -13,7 +13,7 @@ import project.lib.scaffolding.streaming.InputStreamReader;
 public class App {
     public static void main(String[] args) throws Exception {
         final var tests = TestCollector.collect("project.test.unitTests");
-        TestExecutor.execute(TestExecutorOptions.standard(), tests);
+        TestExecutor.execute(TestExecutorOptions.verbose(), tests);
     }
 
 }
