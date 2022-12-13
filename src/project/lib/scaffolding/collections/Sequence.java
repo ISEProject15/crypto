@@ -1,5 +1,7 @@
 package project.lib.scaffolding.collections;
 
+import project.lib.scaffolding.streaming.SequenceStreamReader;
+
 public abstract class Sequence<T> {
     protected Sequence(Class<T> bufferClass) {
         if (!bufferClass.isArray()) {
@@ -20,7 +22,28 @@ public abstract class Sequence<T> {
     // exclusive
     public abstract int lastIndex();
 
-    public abstract int length();
+    public long firstTotalIndex() {
+        return this.firstSegment().totalIndex() + this.firstIndex();
+    }
+
+    public long lastTotalIndex() {
+        return this.lastSegment().totalIndex() + this.lastIndex();
+    }
+
+    public Sequence<T> slice(int offset) {
+        final var view = new SequenceStreamReader<>(this.bufferClass, this.firstSegment(), this.firstIndex(), this.lastSegment(), this.lastIndex());
+        view.advance(offset);
+        return view;
+    }
+
+    public long length() {
+        final var firstSegment = this.firstSegment();
+        final var lastSegment = this.lastSegment();
+        if (firstSegment == null) {
+            return 0;
+        }
+        return lastSegment.totalIndex() - firstSegment.totalIndex() + (this.lastIndex() - this.firstIndex());
+    }
 
     public boolean isSingleSegment() {
         return this.firstSegment() == this.lastSegment();
@@ -36,7 +59,7 @@ public abstract class Sequence<T> {
 
     public T toArray() {
         final var totalLength = this.length();
-        final var array = ArrayUtil.create(bufferClass, totalLength);
+        final var array = ArrayUtil.create(bufferClass, (int) totalLength);
         final var lastSegment = this.lastSegment();
 
         var segment = this.firstSegment();

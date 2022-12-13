@@ -11,7 +11,7 @@ public interface Transformer<T> {
 
     public boolean completed();
 
-    public default int rest() {
+    public default long rest() {
         return this.read().length();
     }
 

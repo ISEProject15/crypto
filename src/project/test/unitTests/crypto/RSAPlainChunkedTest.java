@@ -4,6 +4,7 @@ import java.math.BigInteger;
 
 import project.lib.crypto.algorithm.RSA;
 import project.lib.crypto.algorithm.RSAPlainChunked;
+import project.lib.scaffolding.streaming.SequenceStreamReader;
 import project.lib.scaffolding.streaming.StreamUtil;
 import project.scaffolding.debug.BinaryDebug;
 import project.test.scaffolding.TestAnnotation;
@@ -11,7 +12,7 @@ import project.test.scaffolding.TestAnnotation;
 @TestAnnotation
 class RSAPlainChunkedTest {
 
-    @TestAnnotation
+    @TestAnnotation(order = 0)
     void validate_encrypter() {
         final var bundle = RSA.generateKey(33);
         final var encrypter = RSAPlainChunked.encrypter(bundle.exponent, bundle.modulo);
@@ -23,8 +24,8 @@ class RSAPlainChunkedTest {
                 : "encrypted binary length should multiple of code block length";
     }
 
-    @TestAnnotation(order = 5)
-    void validate_decrypter() {
+    @TestAnnotation(order = 1)
+    void validate_decrypter() throws Exception {
         final var bundle = RSA.generateKey(33);
         final var encrypter = RSAPlainChunked.encrypter(bundle.exponent, bundle.modulo);
         final var decrypter = RSAPlainChunked.decrypter(bundle.secret, bundle.modulo);
@@ -33,14 +34,15 @@ class RSAPlainChunkedTest {
         final var encrypted = encrypter.read();
         System.out.println(BinaryDebug.dumpHex(encrypted));
 
-        assert decWritten < 0 : "maximumOutputSize " + enc.length + " should greater than output";
-        assert StreamUtil.lenof(decWritten) % RSA.plainBlockLength(bundle.modulo) == 0
+        final var decrypted = SequenceStreamReader.from(encrypted).transform(decrypter).readTotally().toArray();
+
+        assert decrypted.length % RSA.plainBlockLength(bundle.modulo) == 0
                 : "decrypted binary length should multiple of plain block length";
 
-        for (var i = 0; i < Math.min(plain.length, StreamUtil.lenof(decWritten)); ++i) {
-            assert plain[i] == dec[i] : "decryption failed";
+        for (var i = 0; i < Math.min(plain.length, decrypted.length); ++i) {
+            assert plain[i] == decrypted[i] : "decryption failed";
         }
 
-        System.out.println(BinaryDebug.dumpHexDiff(plain, dec));
+        System.out.println(BinaryDebug.dumpHexDiff(plain, decrypted));
     }
 }

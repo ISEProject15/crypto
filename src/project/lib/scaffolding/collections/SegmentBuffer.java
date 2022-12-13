@@ -17,17 +17,11 @@ public class SegmentBuffer<T> extends Sequence<T> {
     private int firstIndex;
     private Segment lastSegment;
     private int lastIndex;
-    private int length;
 
     private final Writer writer;
 
     public BufferWriter<T> writer() {
         return this.writer;
-    }
-
-    @Override
-    public int length() {
-        return this.length;
     }
 
     @Override
@@ -83,37 +77,42 @@ public class SegmentBuffer<T> extends Sequence<T> {
 
         final var lastSegment = this.lastSegment;
         final var strategy = this.strategy;
+        var firstSegment = this.firstSegment;
+        var firstIndex = this.firstIndex;
+        if (firstSegment == null) {
+            return -1;
+        }
+
         var written = 0;
-        var segment = this.firstSegment;
-        var segmentOffset = this.firstIndex;
-
-        while (segment != null && written < length) {
+        while (true) {
             final var rest = length - written;
-            final var segmentLength = segment == lastSegment ? this.lastIndex : segment.length;
+            final var isLast = firstSegment == lastSegment;
+            final var firstLength = isLast ? this.lastIndex : firstSegment.length;
+            final var firstRest = firstLength - firstIndex;
+            final var bufferOffset = firstIndex + firstSegment.offset;
+            final var dstOffset = written + offset;
 
-            final var toWrite = Math.min(segmentLength - segmentOffset, rest);
-            System.arraycopy(segment.buffer, segmentOffset + segment.offset, destination, written + offset, toWrite);
-
-            if (segmentLength <= rest) {
-                final var next = segment.next;
-                strategy.backSegmentBuffer(segment.buffer);
-
-                segment = next;
-                segmentOffset = 0;
+            if (firstRest <= rest) {
+                System.arraycopy(firstSegment.buffer, bufferOffset, destination, dstOffset, firstRest);
+                written += firstRest;
+                if (isLast) {
+                    firstIndex = lastIndex;
+                    break;
+                }
+                strategy.backSegmentBuffer(firstSegment.buffer);
+                firstSegment = firstSegment.next;
+                firstIndex = 0;
             } else {
-                segmentOffset += toWrite;
+                System.arraycopy(firstSegment.buffer, bufferOffset, destination, dstOffset, rest);
+                written += rest;
+                firstIndex += rest;
+                break;
             }
 
-            written += toWrite;
         }
 
-        this.firstSegment = segment;
-        this.firstIndex = segmentOffset;
-        if (segment == null) {// sequence is empty
-            this.lastSegment = null;
-        }
-        this.length -= written;
-
+        this.firstSegment = firstSegment;
+        this.firstIndex = firstIndex;
         if (this.isEmpty()) {
             return ~written;
         }
@@ -134,32 +133,37 @@ public class SegmentBuffer<T> extends Sequence<T> {
             return;
         }
 
-        final var lastSegment = this.lastSegment;
         final var strategy = this.strategy;
-        var discarded = 0;
-        var segment = this.firstSegment;
-        var offset = this.firstIndex;
-        while (segment != null && discarded < amount) {
-            final var rest = amount - discarded;
-            final var length = segment == lastSegment ? this.lastIndex : segment.length;
-            final var toDiscard = Math.min(length, rest);
-            if (length <= rest) {
-                final var next = segment.next;
-                strategy.backSegmentBuffer(segment.buffer);
-                segment = next;
-                offset = 0;
-            } else {
-                offset += toDiscard;
-            }
-            discarded += toDiscard;
+        final var lastSegment = this.lastSegment;
+        final var lastIndex = this.lastIndex;
+        var firstSegment = this.firstSegment;
+        var firstIndex = this.firstIndex;
+
+        if (firstSegment == null) {
+            return;
         }
 
-        this.firstSegment = segment;
-        this.firstIndex = offset;
-        if (segment == null) {
-            this.lastSegment = null;
+        while (true) {
+            final var isLast = firstSegment == lastSegment;
+            final var firstLength = isLast ? lastIndex : firstSegment.length;
+            final var rest = firstLength - firstIndex;
+            if (rest <= amount) {
+                if (isLast) {
+                    firstIndex = lastIndex;
+                    break;
+                }
+                strategy.backSegmentBuffer(firstSegment.buffer);
+                firstSegment = firstSegment.next;
+                firstIndex = 0;
+                amount -= rest;
+            } else {
+                firstIndex += amount;
+                break;
+            }
         }
-        this.length -= discarded;
+
+        this.firstSegment = firstSegment;
+        this.firstIndex = firstIndex;
     }
 
     private final class Writer implements BufferWriter<T> {
@@ -212,7 +216,7 @@ public class SegmentBuffer<T> extends Sequence<T> {
                 return;
             }
 
-            final var segment = new Segment(buffer, 0, StreamUtil.lenof(length));
+            final var segment = new Segment(buffer, 0, StreamUtil.lenof(length), 0);
 
             if (firstSegment == null) {// sequence has no segment
                 firstSegment = lastSegment = segment;
@@ -223,9 +227,8 @@ public class SegmentBuffer<T> extends Sequence<T> {
                 lastSegment.next = segment;
                 lastSegment = segment;
                 lastIndex = length;
+                segment.totalIndex = lastSegment.successorTotalIndex();
             }
-
-            SegmentBuffer.this.length += length;
         }
 
         @Override
@@ -250,15 +253,17 @@ public class SegmentBuffer<T> extends Sequence<T> {
     }
 
     private final class Segment extends SequenceSegment<T> {
-        Segment(T source, int offset, int length) {
+        Segment(T source, int offset, int length, long totalIndex) {
             super(source);
             this.offset = offset;
             this.length = length;
+            this.totalIndex = totalIndex;
         }
 
         Segment next;
         int offset;
         int length;
+        long totalIndex;
 
         @Override
         public Segment next() {
@@ -273,6 +278,15 @@ public class SegmentBuffer<T> extends Sequence<T> {
         @Override
         public int length() {
             return this.length;
+        }
+
+        @Override
+        public long totalIndex() {
+            return this.totalIndex;
+        }
+
+        public long successorTotalIndex() {
+            return this.totalIndex() + this.length;
         }
     }
 }
