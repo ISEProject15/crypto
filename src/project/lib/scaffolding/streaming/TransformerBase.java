@@ -7,7 +7,9 @@ import project.lib.scaffolding.collections.Sequence;
 
 public abstract class TransformerBase<T> implements Transformer<T> {
     protected TransformerBase(ArrayPool<T> pool, SegmentBufferStrategy<T> strategy) {
-        this.writer = new DefaultPooledBufferWriter<>(pool, this::transform);
+        final var subject = new BufferWriterSubject<T>();
+        this.subject = subject;
+        this.writer = new DefaultPooledBufferWriter<>(pool, subject);
         this.buffer = new SegmentBuffer<>(strategy);
     }
 
@@ -15,11 +17,10 @@ public abstract class TransformerBase<T> implements Transformer<T> {
         this(pool, SegmentBufferStrategy.defaultPooledStrategy(pool));
     }
 
+    public final BufferWriterSubject<T> subject;
     protected final BufferWriter<T> writer;
     protected final SegmentBuffer<T> buffer;
     private boolean completed;
-
-    protected abstract void transform(T buffer, int offset, int length);
 
     protected final void markCompleted() {
         this.completed = true;

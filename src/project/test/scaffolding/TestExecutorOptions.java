@@ -8,15 +8,18 @@ public class TestExecutorOptions {
     private static final byte DISPLAY_ONFAILED = 2;
 
     public static TestExecutorOptions quiet() {
-        return new TestExecutorOptions(DISPLAY_NEVER, DISPLAY_NEVER, false, false, null, null);
+        return new TestExecutorOptions(DISPLAY_NEVER, DISPLAY_NEVER, false, false,
+                AnsiColor.fgBlue, AnsiColor.fgYellow);
     }
 
     public static TestExecutorOptions standard() {
-        return new TestExecutorOptions(DISPLAY_ONFAILED, DISPLAY_ONFAILED, true, false, null, null);
+        return new TestExecutorOptions(DISPLAY_ONFAILED, DISPLAY_ONFAILED, true, false,
+                AnsiColor.fgBlue, AnsiColor.fgYellow);
     }
 
     public static TestExecutorOptions verbose() {
-        return new TestExecutorOptions(DISPLAY_ALWAYS, DISPLAY_ALWAYS, true, true, null, null);
+        return new TestExecutorOptions(DISPLAY_ALWAYS, DISPLAY_ALWAYS, true, true,
+                AnsiColor.fgBlue, AnsiColor.fgYellow);
     }
 
     private TestExecutorOptions(byte stdoutDisplayFlags, byte stderrDisplayFlags, boolean displayExceptionMessage,

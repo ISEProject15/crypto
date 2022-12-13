@@ -73,20 +73,16 @@ public final class TestExecutor {
         if (dump == null || dump.isEmpty()) {
             return;
         }
-        if (color != null) {
-            appendable.print(color);
-        }
+
         var lineNo = 0;
 
         final var lines = dump.lines().collect(Collectors.toUnmodifiableList());
         final var digits = (int) Math.ceil(Math.log10(lines.size() + 1));
-        final var format = "%s%0" + digits + "d: ";
+        final var formatBody = "%s%0" + digits + "d:";
+        final var format = color == null ? formatBody : (color + formatBody + AnsiColor.reset);
         for (final var line : lines) {
-            appendable.print(String.format(format, linePrefix, lineNo)).println(line);
+            appendable.print(String.format(format, linePrefix, lineNo)).print(' ').println(line);
             lineNo++;
-        }
-        if (color != null) {
-            appendable.print(AnsiColor.reset);
         }
     }
 

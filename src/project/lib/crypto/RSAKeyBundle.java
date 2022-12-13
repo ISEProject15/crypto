@@ -1,4 +1,4 @@
-package project.test;
+package project.lib.crypto;
 
 import java.math.BigInteger;
 

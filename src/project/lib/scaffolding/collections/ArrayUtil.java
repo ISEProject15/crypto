@@ -60,6 +60,11 @@ public class ArrayUtil {
     }
 
     @SuppressWarnings("unchecked")
+    public static <T> T[] create(T... items) {
+        return items;
+    }
+
+    @SuppressWarnings("unchecked")
     public static <T> T resize(T array, int size) {
         if (array == null) {
             return null;
@@ -69,5 +74,24 @@ public class ArrayUtil {
         final var minLen = Math.min(size, Array.getLength(array));
         System.arraycopy(array, 0, newarr, 0, minLen);
         return newarr;
+    }
+
+    public static <T> void copyFromBack2Back(T src, T dst, int dstOffsetFromFirst, int length) {
+        final var srcLen = Array.getLength(src);
+        final var dstLen = Array.getLength(dst);
+
+        if (length < 0) {
+            throw new IllegalArgumentException();
+        }
+        if (dstOffsetFromFirst + length > dstLen) {
+            throw new IllegalArgumentException();
+        }
+        if (length == 0) {
+            return;
+        }
+        final var minLen = Math.min(srcLen, length);
+        final var srcOff = srcLen - minLen;
+        final var dstOff = dstOffsetFromFirst + (length - minLen);
+        System.arraycopy(src, srcOff, dst, dstOff, minLen);
     }
 }

@@ -3,8 +3,11 @@ package project.lib.crypto.algorithm;
 import java.math.BigInteger;
 
 import project.lib.scaffolding.ByteArrayPool;
-import project.lib.scaffolding.streaming.BlockTransformerBase;
+import project.lib.scaffolding.collections.ArrayUtil;
+import project.lib.scaffolding.streaming.BlockBufferWriterListenerProxy;
+import project.lib.scaffolding.streaming.StreamUtil;
 import project.lib.scaffolding.streaming.Transformer;
+import project.lib.scaffolding.streaming.TransformerBase;
 
 public final class RSAPlainChunked {
     private RSAPlainChunked() {
@@ -19,31 +22,32 @@ public final class RSAPlainChunked {
         return new Decrypter(secret, modulo);
     }
 
-    private static class Encrypter extends BlockTransformerBase<byte[]> {
+    private static final class Encrypter extends TransformerBase<byte[]> {
         Encrypter(BigInteger exponent, BigInteger modulo) {
-            super(RSA.plainBlockLength(modulo), ByteArrayPool.instance());
+            super(ByteArrayPool.instance());
+            final var plainBlockLength = RSA.plainBlockLength(modulo);
+            this.plainBlockLength = plainBlockLength;
             this.codeBlockLength = RSA.codeBlockLength(modulo);
             this.exponent = exponent;
             this.modulo = modulo;
+            this.subject.listen(BlockBufferWriterListenerProxy.wrap(new byte[plainBlockLength], this::transform));
         }
 
+        private final int plainBlockLength;
         private final int codeBlockLength;
         private final BigInteger exponent;
         private final BigInteger modulo;
 
-        @Override
-        protected void transform(byte[] buffer, int offset, boolean isLast) {
+        private void transform(byte[] buffer, int offset, int length) {
             final var codeBlockLength = this.codeBlockLength;
-            final var plain = new BigInteger(1, buffer, offset, this.blockLength);
+            final var plain = new BigInteger(1, buffer, offset, this.plainBlockLength);
             final var code = plain.modPow(this.exponent, this.modulo);
             final var bin = code.toByteArray();
             final var writer = this.buffer.writer();
 
             writer.stage(codeBlockLength);
-            final var len = Math.min(codeBlockLength, bin.length);
-            final var off = bin.length - len;
-            System.arraycopy(bin, off, writer.stagedBuffer(), writer.stagedOffset() + codeBlockLength - len, len);
-            if (isLast) {
+            ArrayUtil.copyFromBack2Back(bin, writer.stagedBuffer(), writer.stagedOffset(), codeBlockLength);
+            if (StreamUtil.isLast(length)) {
                 writer.finish(~codeBlockLength);
                 this.markCompleted();
             } else {
@@ -52,31 +56,33 @@ public final class RSAPlainChunked {
         }
     }
 
-    private static class Decrypter extends BlockTransformerBase<byte[]> {
+    private static final class Decrypter extends TransformerBase<byte[]> {
         Decrypter(BigInteger secret, BigInteger modulo) {
-            super(RSA.codeBlockLength(modulo), ByteArrayPool.instance());
+            super(ByteArrayPool.instance());
+            final var codeBlockLength = RSA.codeBlockLength(modulo);
+            this.codeBlockLength = codeBlockLength;
             this.plainBlockLength = RSA.plainBlockLength(modulo);
             this.secret = secret;
             this.modulo = modulo;
+
+            this.subject.listen(BlockBufferWriterListenerProxy.wrap(new byte[codeBlockLength], this::transform));
         }
 
+        private final int codeBlockLength;
         private final int plainBlockLength;
         private final BigInteger secret;
         private final BigInteger modulo;
 
-        @Override
-        protected void transform(byte[] buffer, int offset, boolean isLast) {
+        private void transform(byte[] buffer, int offset, int length) {
             final var plainBlockLength = this.plainBlockLength;
-            final var code = new BigInteger(1, buffer, offset, this.blockLength);
+            final var code = new BigInteger(1, buffer, offset, this.codeBlockLength);
             final var plain = code.modPow(this.secret, this.modulo);
             final var bin = plain.toByteArray();
             final var writer = this.buffer.writer();
 
             writer.stage(plainBlockLength);
-            final var len = Math.min(plainBlockLength, bin.length);
-            final var off = bin.length - len;
-            System.arraycopy(bin, off, writer.stagedBuffer(), writer.stagedOffset() + plainBlockLength - len, len);
-            if (isLast) {
+            ArrayUtil.copyFromBack2Back(bin, writer.stagedBuffer(), writer.stagedOffset(), plainBlockLength);
+            if (StreamUtil.isLast(length)) {
                 writer.finish(~plainBlockLength);
                 this.markCompleted();
             } else {

@@ -3,8 +3,8 @@ package project.lib.crypto.algorithm;
 import java.math.BigInteger;
 import java.util.Random;
 
+import project.lib.crypto.RSAKeyBundle;
 import project.lib.scaffolding.IntMath;
-import project.test.RSAKeyBundle;
 
 public final class RSA {
     private RSA() {
