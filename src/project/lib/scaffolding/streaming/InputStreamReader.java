@@ -3,7 +3,6 @@ package project.lib.scaffolding.streaming;
 import java.io.IOException;
 import java.io.InputStream;
 
-import project.lib.StreamBuffer;
 import project.lib.scaffolding.collections.Sequence;
 
 public class InputStreamReader implements StreamReader<byte[]> {

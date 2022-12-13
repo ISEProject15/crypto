@@ -1,17 +1,15 @@
 package project.lib.scaffolding.streaming;
 
-import java.lang.reflect.Array;
-
 import project.lib.scaffolding.ArrayPool;
+import project.lib.scaffolding.collections.ArrayUtil;
 import project.lib.scaffolding.collections.SegmentBuffer;
 import project.lib.scaffolding.collections.SegmentBufferStrategy;
 import project.lib.scaffolding.collections.Sequence;
 
 public abstract class BlockTransformerBase<T> implements Transformer<T> {
-    @SuppressWarnings("unchecked")
     protected BlockTransformerBase(int blockLength, ArrayPool<T> pool, SegmentBufferStrategy<T> strategy) {
-        final var block = (T) Array.newInstance(pool.arrayClass.componentType(), blockLength);
-        final var listener = BlockBufferWriterProxy.wrap(block, this::transform);
+        final var block = ArrayUtil.create(pool.arrayClass, blockLength);
+        final var listener = BlockBufferWriterListenerProxy.wrap(block, this::transform);
         this.blockLength = blockLength;
         this.writer = new DefaultPooledBufferWriter<>(pool, listener);
         this.buffer = new SegmentBuffer<>(strategy);

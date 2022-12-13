@@ -11,68 +11,27 @@ import project.test.scaffolding.TestAnnotation;
 @TestAnnotation
 class RSAPlainChunkedTest {
 
-    @TestAnnotation(order = 0)
-    void generateKey_should_return_null_when_parameter_less_than_9() {
-        for (var k = -1; k < 9; ++k) {
-            assert RSAPlainChunked.generateKey(k) == null
-                    : String.format("generateKey returned non null when k = %d", k);
-        }
-    }
-
-    @TestAnnotation(order = 1)
-    void keybundle_modulo_should_not_square() {
-        final var bundle = RSAPlainChunked.generateKey(33);
-        assert bundle.modulo.sqrt().pow(2) != bundle.modulo;
-    }
-
-    @TestAnnotation(order = 2)
-    void plain_block_should_less_than_modulo() {
-        final var bundle = RSAPlainChunked.generateKey(33);
-        final var plainBlockLength = RSA.plainBlockLength(bundle.modulo);
-        // 2 ^ (plainBlockLength * 8) - 1
-        final var max = BigInteger.ONE.shiftLeft(plainBlockLength * 8).subtract(BigInteger.ONE);
-        assert bundle.modulo.compareTo(max) > 0;
-    }
-
-    @TestAnnotation(order = 3)
-    void code_block_should_greater_than_modulo() {
-        final var bundle = RSAPlainChunked.generateKey(33);
-        final var codeBlockLength = RSA.codeBlockLength(bundle.modulo);
-        // 2 ^ (plainBlockLength * 8) - 1
-        final var max = BigInteger.ONE.shiftLeft(codeBlockLength * 8).subtract(BigInteger.ONE);
-        assert bundle.modulo.compareTo(max) < 0;
-    }
-
-    @TestAnnotation(order = 4)
+    @TestAnnotation
     void validate_encrypter() {
-        final var bundle = RSAPlainChunked.generateKey(33);
-        final var encripter = RSAPlainChunked.encripter(bundle.exponent, bundle.modulo);
+        final var bundle = RSA.generateKey(33);
+        final var encrypter = RSAPlainChunked.encrypter(bundle.exponent, bundle.modulo);
         final var plain = new byte[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, };
-        final var encrypted = new byte[encripter.maximumOutputSize(~plain.length)];
-        final var written = encripter.transform(plain, 0, ~plain.length, encrypted, 0, encrypted.length);
-        System.out.println("written: " + written);
+        encrypter.writer().write(plain, 0, ~plain.length);
+        final var encrypted = encrypter.read();
         System.out.println(BinaryDebug.dumpHex(encrypted));
-        assert written < 0 : "maximumOutputSize " + encrypted.length + " should greater than output";
-        assert StreamUtil.lenof(written) % RSA.codeBlockLength(bundle.modulo) == 0
+        assert encrypted.length() % RSA.codeBlockLength(bundle.modulo) == 0
                 : "encrypted binary length should multiple of code block length";
     }
 
     @TestAnnotation(order = 5)
     void validate_decrypter() {
-        final var bundle = RSAPlainChunked.generateKey(33);
-        final var encripter = RSAPlainChunked.encripter(bundle.exponent, bundle.modulo);
-        final var decripter = RSAPlainChunked.decripter(bundle.secret, bundle.modulo);
+        final var bundle = RSA.generateKey(33);
+        final var encrypter = RSAPlainChunked.encrypter(bundle.exponent, bundle.modulo);
+        final var decrypter = RSAPlainChunked.decrypter(bundle.secret, bundle.modulo);
         final var plain = new byte[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, };
-        final var enc = new byte[encripter.maximumOutputSize(~plain.length)];
-        final var encWritten = encripter.transform(plain, 0, ~plain.length, enc, 0, enc.length);
-        final var dec = new byte[decripter.maximumOutputSize(StreamUtil.lenof(encWritten))];
-        final var decWritten = decripter.transform(enc, 0, ~StreamUtil.lenof(encWritten), dec,
-                0, dec.length);
-
-        System.out.println("encrypted written: " + encWritten);
-        System.out.println(BinaryDebug.dumpHex(enc));
-        System.out.println("decrypted written: " + decWritten);
-        System.out.println(BinaryDebug.dumpHex(dec));
+        encrypter.writer().write(plain, 0, ~plain.length);
+        final var encrypted = encrypter.read();
+        System.out.println(BinaryDebug.dumpHex(encrypted));
 
         assert decWritten < 0 : "maximumOutputSize " + enc.length + " should greater than output";
         assert StreamUtil.lenof(decWritten) % RSA.plainBlockLength(bundle.modulo) == 0

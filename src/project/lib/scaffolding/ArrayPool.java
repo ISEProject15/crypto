@@ -18,13 +18,12 @@ public class ArrayPool<T> {
     private final ReentrantLock lock;
     public final Class<T> arrayClass;
 
-    @SuppressWarnings("unchecked")
     public T rent(int minimumLength) {
         final var arr = this.tryRent(minimumLength);
         if (arr != null) {
             return arr;
         }
-        return (T) Array.newInstance(arrayClass.componentType(), minimumLength);
+        return ArrayUtil.create(arrayClass, minimumLength);
     }
 
     public T tryRent(int minimumLength) {

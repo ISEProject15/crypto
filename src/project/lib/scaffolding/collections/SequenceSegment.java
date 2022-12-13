@@ -1,5 +1,6 @@
 package project.lib.scaffolding.collections;
 
+//TODO: add totalIndex
 public abstract class SequenceSegment<T> {
     protected SequenceSegment(T buffer) {
         this.buffer = buffer;

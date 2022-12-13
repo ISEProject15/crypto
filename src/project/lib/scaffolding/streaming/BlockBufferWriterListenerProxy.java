@@ -3,22 +3,21 @@ package project.lib.scaffolding.streaming;
 import java.lang.reflect.Array;
 
 import project.lib.scaffolding.collections.ArrayUtil;
-import project.scaffolding.debug.BinaryDebug;
 
-public final class BlockBufferWriterProxy<T> implements BufferWriterListener<T> {
-    public static <T> BlockBufferWriterProxy<T> wrap(T block, BufferWriterListener<T> listener) {
-        return new BlockBufferWriterProxy<>(block, listener);
+public final class BlockBufferWriterListenerProxy<T> implements BufferWriterListener<T> {
+    public static <T> BlockBufferWriterListenerProxy<T> wrap(T block, BufferWriterListener<T> listener) {
+        return new BlockBufferWriterListenerProxy<>(block, listener);
     }
 
-    private BlockBufferWriterProxy(T block, BufferWriterListener<T> listener) {
+    private BlockBufferWriterListenerProxy(T block, BufferWriterListener<T> listener) {
         this.listener = listener;
         this.block = block;
         this.blockLength = Array.getLength(block);
         this.blockRemaining = 0;
     }
 
-    // this listener always called
-    // with argument length is blockLength or ~blockLength
+    // this listener always called with
+    // argument length is blockLength or ~blockLength
     private final BufferWriterListener<T> listener;
     private final T block;
     private final int blockLength;

@@ -55,12 +55,17 @@ public class ArrayUtil {
     }
 
     @SuppressWarnings("unchecked")
+    public static <T> T create(Class<T> cls, int length) {
+        return (T) Array.newInstance(cls.componentType(), length);
+    }
+
+    @SuppressWarnings("unchecked")
     public static <T> T resize(T array, int size) {
         if (array == null) {
             return null;
         }
-        final var cls = array.getClass();
-        final var newarr = (T) Array.newInstance(cls.componentType(), size);
+        final var cls = (Class<T>) array.getClass();
+        final var newarr = create(cls, size);
         final var minLen = Math.min(size, Array.getLength(array));
         System.arraycopy(array, 0, newarr, 0, minLen);
         return newarr;

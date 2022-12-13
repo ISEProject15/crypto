@@ -1,7 +1,5 @@
 package project.lib.scaffolding.collections;
 
-import java.lang.reflect.Array;
-
 public abstract class Sequence<T> {
     protected Sequence(Class<T> bufferClass) {
         if (!bufferClass.isArray()) {
@@ -36,10 +34,9 @@ public abstract class Sequence<T> {
         return SequenceIterator.from(this);
     }
 
-    @SuppressWarnings("unchecked")
     public T toArray() {
         final var totalLength = this.length();
-        final var array = (T) Array.newInstance(bufferClass.componentType(), totalLength);
+        final var array = ArrayUtil.create(bufferClass, totalLength);
         final var lastSegment = this.lastSegment();
 
         var segment = this.firstSegment();
