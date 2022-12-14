@@ -46,7 +46,8 @@ public final class TestExecutor {
                 final var exception = summary.exception();
                 appendable.print(AnsiColor.fgRed).print(exception.getClass().getName());
                 if (options.displayExceptionMessage()) {
-                    appendable.print(": ").print(exception.getMessage());
+                    final var msg = exception.getMessage();
+                    appendable.print(": ").print(msg == null ? "no further information" : msg);
                 }
                 appendable.println(AnsiColor.reset);
 

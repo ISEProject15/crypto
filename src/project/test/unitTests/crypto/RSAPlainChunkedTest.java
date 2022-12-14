@@ -10,15 +10,6 @@ import project.test.scaffolding.TestAnnotation;
 
 @TestAnnotation
 class RSAPlainChunkedTest {
-    @TestAnnotation
-    void generateKey_should_return_null_when_parameter_less_than_9() {
-        final var random = new Random();
-        for (var k = -1; k < 9; ++k) {
-            assert RSAPlainChunked.generateKey(k, random) == null
-                    : String.format("generateKey returned non null when k = %d", k);
-        }
-    }
-
     @TestAnnotation(order = 0)
     void validate_encrypter() {
         final var random = new Random();

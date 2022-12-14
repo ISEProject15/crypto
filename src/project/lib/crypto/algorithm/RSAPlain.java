@@ -17,7 +17,9 @@ public final class RSAPlain {
     }
 
     public static RSAKeyBundle generateKey(int k, Random random) {
-        if (k <= 8) {
+        // modulo.bitLength should greater than 8
+        // -> k should greater than 4.5
+        if (k <= 4) {
             return null;
         }
         return RSA.generateKey(k, random);

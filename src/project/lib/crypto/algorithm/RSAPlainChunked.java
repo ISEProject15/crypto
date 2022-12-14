@@ -17,10 +17,7 @@ public final class RSAPlainChunked {
     }
 
     public static RSAKeyBundle generateKey(int k, Random random) {
-        if (k <= 8) {
-            return null;
-        }
-        return RSA.generateKey(k, random);
+        return RSAPlain.generateKey(k, random);
     }
 
     public static Transformer<byte[]> encrypter(BigInteger exponent, BigInteger modulo) {

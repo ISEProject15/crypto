@@ -17,10 +17,7 @@ public final class RSAExtendedChunkedRandom {
     }
 
     public static RSAKeyBundle generateKey(int k, Random random) {
-        if (k <= 16) {
-            return null;
-        }
-        return RSA.generateKey(k, random);
+        return RSAExtendedChunked.generateKey(k, random);
     }
 
     public static Transformer<byte[]> encrypter(BigInteger exponent, BigInteger modulo, Random random) {

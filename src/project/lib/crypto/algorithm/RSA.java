@@ -11,6 +11,9 @@ public final class RSA {
 
     }
 
+    // 2 ** (2k - 2) < modulo <= 2**(2k) - 1
+    // -> 2k-1 <= modulo.bitLength < 2k + 1
+    // <-> modulo.bitLength = 2k - 1, 2k
     public static RSAKeyBundle generateKey(int k, Random random) {
         if (k < 2) {
             return null;
@@ -27,6 +30,10 @@ public final class RSA {
         final var q = prime;
 
         // 2 ** (2k - 2) < modulo <= ((2**k) - 1) ** 2
+        // ((2**k) - 1)**2 = 2**(2k) - 2**(k + 1) + 1
+        // 2**(k + 1) >= 2
+        // -> -2**(k + 1) + 1 <= -1
+        // -> modulo <= 2**(2k) - 1
         final var modulo = p.multiply(q);
         final var phi = p.subtract(one).multiply(q.subtract(one));
         final var bitlen = phi.bitLength();
@@ -48,12 +55,13 @@ public final class RSA {
         // block length less than modulo
         final var one = BigInteger.ONE;
         var len = modulo.bitLength() - 1;
+        var num = one.shiftLeft(len).subtract(one);
         while (true) {
             // number that filled 1 and its bit length is len - 1
-            final var num = one.shiftLeft(len).subtract(one);
             if (num.compareTo(modulo) < 0) {
                 break;
             }
+            num = num.shiftRight(1);
             len--;
         }
         return len;

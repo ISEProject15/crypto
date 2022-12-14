@@ -17,7 +17,9 @@ public final class RSAExtendedChunked {
     }
 
     public static RSAKeyBundle generateKey(int k, Random random) {
-        if (k <= 16) {
+        // modulo.bitLength should greater than 16
+        // -> k should greater than 8.5
+        if (k <= 8) {
             return null;
         }
         return RSA.generateKey(k, random);

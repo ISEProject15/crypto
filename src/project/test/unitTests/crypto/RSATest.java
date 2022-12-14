@@ -8,6 +8,18 @@ import project.test.scaffolding.TestAnnotation;
 
 @TestAnnotation
 public class RSATest {
+
+    @TestAnnotation
+    void modulo_bitlength_should_equal_to_2k_or_2k_minus_1() {
+        for (var k = 2; k < 1024; ++k) {
+            final var random = new Random();
+            final var bundle = RSA.generateKey(k, random);
+            final var bitlen = bundle.modulo.bitLength();
+            assert (bitlen == (2 * k)) || (bitlen == (2 * k - 1))
+                    : "modulo(" + bundle.modulo + ").bitlength = " + bitlen + "; k = " + k;
+        }
+    }
+
     @TestAnnotation
     void keybundle_modulo_should_not_square() {
         final var random = new Random();
