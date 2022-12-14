@@ -14,7 +14,7 @@ public class AnsiColor {
     public static final AnsiColor bgGreen = new AnsiColor("42", BG);
     public static final AnsiColor bgYellow = new AnsiColor("43", BG);
     public static final AnsiColor bgBlue = new AnsiColor("44", BG);
-    public static final AnsiColor bgMagnta = new AnsiColor("45", BG);
+    public static final AnsiColor bgMagenta = new AnsiColor("45", BG);
     public static final AnsiColor bgCyan = new AnsiColor("46", BG);
     public static final AnsiColor bgWhite = new AnsiColor("47", BG);
 
@@ -32,7 +32,7 @@ public class AnsiColor {
     public static final AnsiColor fgGreen = new AnsiColor("32", FG);
     public static final AnsiColor fgYellow = new AnsiColor("33", FG);
     public static final AnsiColor fgBlue = new AnsiColor("34", FG);
-    public static final AnsiColor fgMagentaa = new AnsiColor("35", FG);
+    public static final AnsiColor fgMagenta = new AnsiColor("35", FG);
     public static final AnsiColor fgCyan = new AnsiColor("36", FG);
     public static final AnsiColor fgWhite = new AnsiColor("37", FG);
 

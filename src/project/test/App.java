@@ -15,6 +15,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import project.lib.crypto.algorithm.*;
+import project.lib.scaffolding.collections.SequenceFunnel;
+import project.lib.scaffolding.streaming.StreamBuffer;
 import project.scaffolding.debug.BinaryDebug;
 import project.test.scaffolding.TestCollector;
 import project.test.scaffolding.TestExecutor;
@@ -23,18 +25,7 @@ import project.test.scaffolding.TestExecutorOptions;
 public class App {
     public static void main(String[] args) throws Exception {
         final var tests = TestCollector.collect("project.test.unitTests");
-        TestExecutor.execute(TestExecutorOptions.standard(), tests);
-        final var random = new Random();
-        final var keybundle = RSAExtendedChunkedRandom.generateKey(17, random);
-        final var encrypter = RSAExtendedChunkedRandom.encrypter(keybundle.exponent, keybundle.modulo, random);
-        final var decrypter = RSAExtendedChunkedRandom.decrypter(keybundle.secret, keybundle.modulo);
-        encrypter.writer().write(new byte[] { 0, 0, 0, 0, 0 }, 0, ~5);
-        final var encrypted = encrypter.read();
-        decrypter.writer().write(encrypted, true);
-        final var decrypted = decrypter.read();
-
-        System.out.println(BinaryDebug.dumpHex(encrypted));
-        System.out.println(BinaryDebug.dumpHex(decrypted));
+        TestExecutor.execute(TestExecutorOptions.verbose(), tests);
 
         final var method = App.class.getDeclaredMethod("sample");
 

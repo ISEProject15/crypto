@@ -31,7 +31,8 @@ public abstract class Sequence<T> {
     }
 
     public Sequence<T> slice(int offset) {
-        final var view = new SequenceStreamReader<>(this.bufferClass, this.firstSegment(), this.firstIndex(), this.lastSegment(), this.lastIndex());
+        final var view = new SequenceStreamReader<>(this.bufferClass, this.firstSegment(), this.firstIndex(),
+                this.lastSegment(), this.lastIndex());
         view.advance(offset);
         return view;
     }
@@ -60,8 +61,10 @@ public abstract class Sequence<T> {
     public T toArray() {
         final var totalLength = this.length();
         final var array = ArrayUtil.create(bufferClass, (int) totalLength);
+        if (totalLength <= 0) {
+            return array;
+        }
         final var lastSegment = this.lastSegment();
-
         var segment = this.firstSegment();
         var offset = this.firstIndex();
         var written = 0;

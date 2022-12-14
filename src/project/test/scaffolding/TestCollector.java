@@ -10,10 +10,19 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import project.scaffolding.debug.AnsiColor;
+
 public class TestCollector {
     public static TestSuite collect(String packageName) {
         final List<TestAgent> agents = ReflectionUtil.allClasses(packageName).stream()
-                .filter(cls -> cls.getAnnotation(TestAnnotation.class) != null).map(TestCollector::collect)
+                .filter(cls -> cls.getAnnotation(TestAnnotation.class) != null).map(cls -> {
+                    final var a = cls.getAnnotation(TestAnnotation.class);
+                    if (a.enabled()) {
+                        return TestCollector.collect(cls);
+                    } else {
+                        return new DisabledAgent(cls.getName());
+                    }
+                })
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
         return new TestSuite(packageName, agents);
@@ -58,7 +67,14 @@ public class TestCollector {
         }
         final var instance = tmp;
         final List<TestAgent> agents = Stream.of(methods).filter(Objects::nonNull).sorted(TestCollector::methodComparer)
-                .map(m -> new MethodAgent(m, instance))
+                .map(m -> {
+                    final var a = m.getAnnotation(TestAnnotation.class);
+                    if (a.enabled()) {
+                        return new MethodAgent(m, instance);
+                    } else {
+                        return new DisabledAgent(m.getName());
+                    }
+                })
                 .collect(Collectors.toList());
         final var suite = new TestSuite(cls.getName(), agents);
         return suite;
@@ -78,6 +94,20 @@ public class TestCollector {
             return -1;
         }
         return Integer.compare(left.order(), right.order());
+    }
+
+    private static final class DisabledAgent extends TestAgent {
+        private static final String message = AnsiColor.fgMagenta + "disabled" + AnsiColor.reset;
+
+        public DisabledAgent(String domain) {
+            super(domain);
+        }
+
+        @Override
+        public TestSummary execute() {
+            return TestSummary.withInformation(domain, null, null, message);
+        }
+
     }
 
     private static final class MethodAgent extends TestAgent {

@@ -45,4 +45,9 @@ public abstract class TransformerBase<T> implements Transformer<T> {
     public final BufferWriter<T> writer() {
         return this.writer;
     }
+
+    @Override
+    public void close() {
+        this.buffer.close();
+    }
 }

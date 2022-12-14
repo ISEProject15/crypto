@@ -9,4 +9,6 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface TestAnnotation {
     public int order() default -1;
+
+    public boolean enabled() default true;
 }

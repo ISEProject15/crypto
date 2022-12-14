@@ -8,8 +8,7 @@ import project.test.scaffolding.TestAnnotation;
 
 @TestAnnotation
 public class RSATest {
-
-    @TestAnnotation
+    @TestAnnotation(enabled = false)
     void modulo_bitlength_should_equal_to_2k_or_2k_minus_1() {
         for (var k = 2; k < 1024; ++k) {
             final var random = new Random();
@@ -46,5 +45,4 @@ public class RSATest {
         final var max = BigInteger.ONE.shiftLeft(codeBlockLength * 8).subtract(BigInteger.ONE);
         assert bundle.modulo.compareTo(max) < 0;
     }
-
 }

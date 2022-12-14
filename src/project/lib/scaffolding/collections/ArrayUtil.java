@@ -48,20 +48,163 @@ public class ArrayUtil {
             Arrays.fill((double[]) array, from, to, 0.0);
             return;
         }
+
         if (cls == boolean[].class) {
             Arrays.fill((boolean[]) array, from, to, false);
             return;
         }
     }
 
-    @SuppressWarnings("unchecked")
-    public static <T> T create(Class<T> cls, int length) {
-        return (T) Array.newInstance(cls.componentType(), length);
+    public static <T> int compare(T arrayL, int fromL, int toL, T arrayR, int fromR, int toR) {
+        if (arrayL == null || arrayR == null) {
+            throw new IllegalArgumentException();
+        }
+        final var cls = arrayL.getClass();
+
+        if (arrayR.getClass() != cls || arrayR.getClass().componentType() != cls.componentType()) {
+            throw new IllegalArgumentException();
+        }
+
+        if (cls == byte[].class) {
+            final var l = (byte[]) arrayL;
+            final var r = (byte[]) arrayR;
+            final var lenL = toL - fromL;
+            final var lenR = toR - fromR;
+            final var minLen = Math.min(lenL, lenR);
+            for (var i = 0; i < minLen; ++i) {
+                final var c = Byte.compare(l[i + fromL], r[i + fromR]);
+                if (c != 0) {
+                    return c;
+                }
+            }
+            return Integer.compare(lenL, lenR);
+        }
+
+        if (cls == char[].class) {
+            final var l = (char[]) arrayL;
+            final var r = (char[]) arrayR;
+            final var lenL = toL - fromL;
+            final var lenR = toR - fromR;
+            final var minLen = Math.min(lenL, lenR);
+            for (var i = 0; i < minLen; ++i) {
+                final var c = Character.compare(l[i + fromL], r[i + fromR]);
+                if (c != 0) {
+                    return c;
+                }
+            }
+            return Integer.compare(lenL, lenR);
+        }
+
+        if (cls == short[].class) {
+            final var l = (short[]) arrayL;
+            final var r = (short[]) arrayR;
+            final var lenL = toL - fromL;
+            final var lenR = toR - fromR;
+            final var minLen = Math.min(lenL, lenR);
+            for (var i = 0; i < minLen; ++i) {
+                final var c = Short.compare(l[i + fromL], r[i + fromR]);
+                if (c != 0) {
+                    return c;
+                }
+            }
+            return Integer.compare(lenL, lenR);
+        }
+
+        if (cls == int[].class) {
+            final var l = (int[]) arrayL;
+            final var r = (int[]) arrayR;
+            final var lenL = toL - fromL;
+            final var lenR = toR - fromR;
+            final var minLen = Math.min(lenL, lenR);
+            for (var i = 0; i < minLen; ++i) {
+                final var c = Integer.compare(l[i + fromL], r[i + fromR]);
+                if (c != 0) {
+                    return c;
+                }
+            }
+            return Integer.compare(lenL, lenR);
+        }
+
+        if (cls == long[].class) {
+            final var l = (long[]) arrayL;
+            final var r = (long[]) arrayR;
+            final var lenL = toL - fromL;
+            final var lenR = toR - fromR;
+            final var minLen = Math.min(lenL, lenR);
+            for (var i = 0; i < minLen; ++i) {
+                final var c = Long.compare(l[i + fromL], r[i + fromR]);
+                if (c != 0) {
+                    return c;
+                }
+            }
+            return Integer.compare(lenL, lenR);
+        }
+
+        if (cls == float[].class) {
+            final var l = (float[]) arrayL;
+            final var r = (float[]) arrayR;
+            final var lenL = toL - fromL;
+            final var lenR = toR - fromR;
+            final var minLen = Math.min(lenL, lenR);
+            for (var i = 0; i < minLen; ++i) {
+                final var c = Float.compare(l[i + fromL], r[i + fromR]);
+                if (c != 0) {
+                    return c;
+                }
+            }
+            return Integer.compare(lenL, lenR);
+        }
+        if (cls == double[].class) {
+            final var l = (double[]) arrayL;
+            final var r = (double[]) arrayR;
+            final var lenL = toL - fromL;
+            final var lenR = toR - fromR;
+            final var minLen = Math.min(lenL, lenR);
+            for (var i = 0; i < minLen; ++i) {
+                final var c = Double.compare(l[i + fromL], r[i + fromR]);
+                if (c != 0) {
+                    return c;
+                }
+            }
+            return Integer.compare(lenL, lenR);
+        }
+
+        if (cls == boolean[].class) {
+            final var l = (boolean[]) arrayL;
+            final var r = (boolean[]) arrayR;
+            final var lenL = toL - fromL;
+            final var lenR = toR - fromR;
+            final var minLen = Math.min(lenL, lenR);
+            for (var i = 0; i < minLen; ++i) {
+                final var c = Boolean.compare(l[i + fromL], r[i + fromR]);
+                if (c != 0) {
+                    return c;
+                }
+            }
+            return Integer.compare(lenL, lenR);
+        }
+
+        if (!Comparable.class.isAssignableFrom(cls.componentType())) {
+            throw new IllegalArgumentException();
+        }
+        final var l = (Comparable[]) arrayL;
+        final var r = (Comparable[]) arrayR;
+        final var lenL = toL - fromL;
+        final var lenR = toR - fromR;
+        final var minLen = Math.min(lenL, lenR);
+        for (var i = 0; i < minLen; ++i) {
+            @SuppressWarnings("unchecked")
+            final var c = l[i + fromL].compareTo(r[i + fromR]);
+            if (c != 0) {
+                return c;
+            }
+        }
+        return Integer.compare(lenL, lenR);
     }
 
     @SuppressWarnings("unchecked")
-    public static <T> T[] create(T... items) {
-        return items;
+    public static <T> T create(Class<T> cls, int length) {
+        return (T) Array.newInstance(cls.componentType(), length);
     }
 
     @SuppressWarnings("unchecked")

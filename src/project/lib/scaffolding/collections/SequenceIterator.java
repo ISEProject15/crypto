@@ -1,5 +1,7 @@
 package project.lib.scaffolding.collections;
 
+import project.lib.scaffolding.streaming.BufferWriterListener;
+
 public final class SequenceIterator<T> {
     public static <T> SequenceIterator<T> from(Sequence<T> sequence) {
         return new SequenceIterator<>(sequence);
@@ -73,5 +75,4 @@ public final class SequenceIterator<T> {
         this.offset = next.offset();
         this.length = next == last ? this.lastIndex : next.length();
     }
-
 }

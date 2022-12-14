@@ -1,7 +1,8 @@
 package project.test.scaffolding;
 
+import java.io.ByteArrayOutputStream;
+import java.io.PrintWriter;
 import java.util.stream.Collectors;
-
 import project.scaffolding.debug.AnsiColor;
 import project.scaffolding.debug.IndentedAppendable;
 
@@ -41,7 +42,12 @@ public final class TestExecutor {
             }
         } else {
             if (summary.succeeded()) {
-                appendable.print(AnsiColor.fgGreen).print(succeededText).println(AnsiColor.reset);
+                final var info = summary.information();
+                if (info == null) {
+                    appendable.print(AnsiColor.fgGreen).print(succeededText).println(AnsiColor.reset);
+                } else {
+                    appendable.println(info);
+                }
             } else {
                 final var exception = summary.exception();
                 appendable.print(AnsiColor.fgRed).print(exception.getClass().getName());
@@ -50,6 +56,10 @@ public final class TestExecutor {
                     appendable.print(": ").print(msg == null ? "no further information" : msg);
                 }
                 appendable.println(AnsiColor.reset);
+
+                if (options.displayExceptionStacktrace()) {
+                    printStacktrace(appendable, exception);
+                }
 
                 if (options.displayStandardOutputOnFailed()) {
                     printDump(appendable, options.standardOutputColor(), stdoutPrefix, summary.standardOutputDump());
@@ -68,6 +78,13 @@ public final class TestExecutor {
             }
         }
         appendable.deindent();
+    }
+
+    private static void printStacktrace(IndentedAppendable appendable, Throwable e) {
+        appendable.print("stacktrace: ");
+        final var output = new ByteArrayOutputStream();
+        e.printStackTrace(new PrintWriter(output, true));
+        appendable.println(output.toString());
     }
 
     private static void printDump(IndentedAppendable appendable, AnsiColor color, String linePrefix, String dump) {

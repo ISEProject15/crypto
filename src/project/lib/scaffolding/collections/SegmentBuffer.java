@@ -1,11 +1,12 @@
 package project.lib.scaffolding.collections;
 
+import java.io.Closeable;
 import java.lang.reflect.Array;
 
 import project.lib.scaffolding.streaming.BufferWriter;
 import project.lib.scaffolding.streaming.StreamUtil;
 
-public class SegmentBuffer<T> extends Sequence<T> {
+public class SegmentBuffer<T> extends Sequence<T> implements Closeable {
     public SegmentBuffer(SegmentBufferStrategy<T> strategy) {
         super(strategy.bufferClass());
         this.strategy = strategy;
@@ -42,6 +43,15 @@ public class SegmentBuffer<T> extends Sequence<T> {
     @Override
     public int lastIndex() {
         return this.lastIndex;
+    }
+
+    @Override
+    public void close() {
+        final var strategy = this.strategy;
+        var segment = this.firstSegment;
+        while (segment != null) {
+            strategy.backSegmentBuffer(segment.buffer);
+        }
     }
 
     public void write(T source, int offset, int length) {
@@ -205,6 +215,7 @@ public class SegmentBuffer<T> extends Sequence<T> {
         @Override
         public void finish(int length) {
             this.throwIfNotStaged();
+            final var sequence = SegmentBuffer.this;
             length = StreamUtil.lenof(length);
             final var buffer = this.stagedBuffer;
             this.stagedBuffer = null;
@@ -218,16 +229,17 @@ public class SegmentBuffer<T> extends Sequence<T> {
 
             final var segment = new Segment(buffer, 0, StreamUtil.lenof(length), 0);
 
-            if (firstSegment == null) {// sequence has no segment
-                firstSegment = lastSegment = segment;
-                firstIndex = 0;
-                lastIndex = length;
+            if (sequence.firstSegment == null) {// sequence has no segment
+                sequence.firstSegment = sequence.lastSegment = segment;
+                sequence.firstIndex = 0;
+                sequence.lastIndex = length;
             } else {
-                assert lastSegment != null : "if sequence is not empty, lastSegment should not null";
-                lastSegment.next = segment;
-                lastSegment = segment;
-                lastIndex = length;
-                segment.totalIndex = lastSegment.successorTotalIndex();
+                assert sequence.lastSegment != null : "if sequence is not empty, lastSegment should not null";
+                final var totalIndex = sequence.lastSegment.successorTotalIndex();
+                sequence.lastSegment.next = segment;
+                sequence.lastSegment = segment;
+                sequence.lastIndex = length;
+                segment.totalIndex = totalIndex;
             }
         }
 

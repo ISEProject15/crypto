@@ -7,6 +7,10 @@ public class TestSummary {
         return new TestSummary(domain, stdout, stderr, null);
     }
 
+    public static TestSummary withInformation(String domain, String stdout, String stderr, Object info) {
+        return new TestSummary(domain, stdout, stderr, info);
+    }
+
     public static TestSummary withException(String domain, String stdout, String stderr,
             Throwable exception) {
         return new TestSummary(domain, stdout, stderr, exception);
@@ -19,13 +23,13 @@ public class TestSummary {
 
     private TestSummary(String domain, String stdout, String stderr, Object obj) {
         this.domain = domain;
-        this.childrenOrException = obj;
+        this.childrenOrInformation = obj;
         this.standardOutputDump = stdout;
         this.standardErrorDump = stderr;
     }
 
     public final String domain;
-    private final Object childrenOrException;
+    private final Object childrenOrInformation;
     private final String standardOutputDump;
     private final String standardErrorDump;
 
@@ -48,20 +52,24 @@ public class TestSummary {
 
     @SuppressWarnings("unchecked")
     public Iterable<TestSummary> children() {
-        if (this.childrenOrException instanceof Iterable<?> children) {
+        if (this.childrenOrInformation instanceof Iterable<?> children) {
             return (Iterable<TestSummary>) children;
         }
         return null;
     }
 
     public Throwable exception() {
-        if (this.childrenOrException instanceof Throwable exception) {
+        if (this.childrenOrInformation instanceof Throwable exception) {
             return exception;
         }
         return null;
     }
 
+    public Object information() {
+        return this.childrenOrInformation;
+    }
+
     public boolean isSuite() {
-        return this.childrenOrException instanceof Iterable<?>;
+        return this.childrenOrInformation instanceof Iterable<?>;
     }
 }

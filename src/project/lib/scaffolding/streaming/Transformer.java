@@ -1,8 +1,10 @@
 package project.lib.scaffolding.streaming;
 
+import java.io.Closeable;
+
 import project.lib.scaffolding.collections.Sequence;
 
-public interface Transformer<T> {
+public interface Transformer<T> extends Closeable {
     public BufferWriter<T> writer();
 
     public Sequence<T> read();
