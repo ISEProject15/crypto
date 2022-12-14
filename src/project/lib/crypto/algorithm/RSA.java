@@ -11,12 +11,13 @@ public final class RSA {
 
     }
 
-    public static RSAKeyBundle generateKey(int k) {
-        if (k <= 8) {
+    public static RSAKeyBundle generateKey(int k, Random random) {
+        if (k < 2) {
             return null;
         }
+
         final var one = BigInteger.ONE;
-        final var random = new Random();
+        // 2 ** (k - 1) < p <= (2 ** k) - 1;
         final var p = BigInteger.probablePrime(k, random);
         // p must not equal to q
         BigInteger prime = null;
@@ -25,6 +26,7 @@ public final class RSA {
         } while (p.equals(prime));
         final var q = prime;
 
+        // 2 ** (2k - 2) < modulo <= ((2**k) - 1) ** 2
         final var modulo = p.multiply(q);
         final var phi = p.subtract(one).multiply(q.subtract(one));
         final var bitlen = phi.bitLength();
