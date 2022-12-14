@@ -1,5 +1,7 @@
 package project.test.unitTests.crypto;
 
+import java.util.Random;
+
 import project.lib.crypto.algorithm.RSA;
 import project.lib.crypto.algorithm.RSAPlainChunked;
 import project.lib.scaffolding.streaming.SequenceStreamReader;
@@ -8,10 +10,19 @@ import project.test.scaffolding.TestAnnotation;
 
 @TestAnnotation
 class RSAPlainChunkedTest {
+    @TestAnnotation
+    void generateKey_should_return_null_when_parameter_less_than_9() {
+        final var random = new Random();
+        for (var k = -1; k < 9; ++k) {
+            assert RSAPlainChunked.generateKey(k, random) == null
+                    : String.format("generateKey returned non null when k = %d", k);
+        }
+    }
 
     @TestAnnotation(order = 0)
     void validate_encrypter() {
-        final var bundle = RSA.generateKey(33);
+        final var random = new Random();
+        final var bundle = RSA.generateKey(33, random);
         final var encrypter = RSAPlainChunked.encrypter(bundle.exponent, bundle.modulo);
         final var plain = new byte[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, };
         encrypter.writer().write(plain, 0, ~plain.length);
@@ -23,7 +34,8 @@ class RSAPlainChunkedTest {
 
     @TestAnnotation(order = 1)
     void validate_decrypter() throws Exception {
-        final var bundle = RSA.generateKey(33);
+        final var random = new Random();
+        final var bundle = RSA.generateKey(33, random);
         final var encrypter = RSAPlainChunked.encrypter(bundle.exponent, bundle.modulo);
         final var decrypter = RSAPlainChunked.decrypter(bundle.secret, bundle.modulo);
         final var plain = new byte[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, };

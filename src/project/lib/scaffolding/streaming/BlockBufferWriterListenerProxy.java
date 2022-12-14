@@ -20,15 +20,11 @@ public final class BlockBufferWriterListenerProxy<T> implements BufferWriterList
     // argument length is blockLength or ~blockLength
     private final BufferWriterListener<T> listener;
     private final T block;
-    private final int blockLength;
+    public final int blockLength;
     private int blockRemaining;
 
     public T getBlock() {
         return this.block;
-    }
-
-    public int blockLength() {
-        return this.blockLength;
     }
 
     @Override
