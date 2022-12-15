@@ -31,6 +31,7 @@ import project.lib.scaffolding.collections.SequenceFunnel;
 import project.lib.scaffolding.streaming.StreamBuffer;
 import project.scaffolding.debug.BinaryDebug;
 import project.scaffolding.debug.IndentedAppendable;
+import project.test.scaffolding.ProgressiveStatistic;
 import project.test.scaffolding.TestCollector;
 import project.test.scaffolding.TestExecutor;
 import project.test.scaffolding.TestExecutorOptions;
@@ -43,54 +44,38 @@ public class App {
         // final var method = App.class.getDeclaredMethod("sample");
         final var file = new File("src\\project\\test\\artifacts\\graph.svg");
         file.createNewFile();
-        final var defaultOut = System.out;
-        final var stream = new PrintStream(file);
-        System.setOut(stream);
+        final var stream = new FileWriter(file, false);
         final var random = new Random();
         final var num = BigInteger.valueOf(167);
         System.err.println(sample(num).toString());
 
-        statistic(() -> benchmark(() -> sample(num)), 1 << 14);
-
+        final var statistic = statistic(() -> benchmark(() -> null), 1 << 14);
+        final var graph = statistic.printGraph();
+        final var builder = IndentedAppendable.create(stream, "  ");
+        graph.encode(builder);
+        System.out.println(statistic.sampleCount());
+        System.out.println(statistic.mean());
         stream.close();
-
-        System.setOut(defaultOut);
     }
 
-    static void statistic(LongSupplier benchmark, int count) {
+    static ProgressiveStatistic statistic(LongSupplier benchmark, int count) {
         final var statistic = new ProgressiveStatistic(3, count);
-        for (var i = 1; i < count; ++i) {
+        for (var i = 0; i < count; ++i) {
             final var measure = benchmark.getAsLong();
             statistic.add(measure);
         }
         statistic.clear();
-        for (var i = 1; i < count; ++i) {
+        for (var i = 0; i < count; ++i) {
             final var measure = benchmark.getAsLong();
             statistic.add(measure);
         }
-        final var graph = statistic.printGraph();
-        final var builder = IndentedAppendable.create(System.out, "  ");
-        graph.encode(builder);
-        System.err.println(statistic.sampleCount());
-        System.err.println(statistic.mean());
-        System.out.flush();
+        return statistic;
     }
 
     static <T> long benchmark(Callable<T> function) {
         try {
             final var startTime = System.nanoTime();
             function.call();
-            final var endTime = System.nanoTime();
-            return endTime - startTime;
-        } catch (Exception e) {
-            return -1;
-        }
-    }
-
-    static <T> long benchmark(Method method) {
-        try {
-            final var startTime = System.nanoTime();
-            method.invoke(null);
             final var endTime = System.nanoTime();
             return endTime - startTime;
         } catch (Exception e) {

@@ -1,4 +1,4 @@
-package project.test;
+package project.test.scaffolding;
 
 import java.util.ArrayList;
 import java.util.Iterator;
