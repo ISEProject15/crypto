@@ -4,33 +4,11 @@ import project.lib.scaffolding.ArrayPool;
 
 public interface SegmentBufferStrategy<T> {
     public static <T> SegmentBufferStrategy<T> defaultPooledStrategy(ArrayPool<T> pool) {
-        return new SegmentBufferStrategy<T>() {
-            {
-                this._pool = pool;
-            }
-            private final ArrayPool<T> _pool;
+        return SegmentBufferStrategies.defaultPooledStrategy(pool);
+    }
 
-            @Override
-            public T requireSegmentBuffer(int required) {
-                return this._pool.rent(required);
-            }
-
-            @Override
-            public T tryRequireSegmentBuffer(int required) {
-                return this._pool.tryRent(required);
-            }
-
-            @Override
-            public void backSegmentBuffer(T buffer) {
-                this._pool.back(buffer);
-            }
-
-            @Override
-            public Class<T> bufferClass() {
-                return this._pool.arrayClass;
-            }
-
-        };
+    public static <T> SegmentBufferStrategy<T> defaultNonPooledStrategy(Class<T> cls) {
+        return SegmentBufferStrategies.defaultNonPooledStrategy(cls);
     }
 
     public T requireSegmentBuffer(int required);

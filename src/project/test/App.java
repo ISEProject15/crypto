@@ -1,68 +1,79 @@
 package project.test;
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
+import java.io.PrintStream;
 import java.lang.reflect.Method;
 import java.math.BigInteger;
+import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import java.util.Map.Entry;
 import java.util.concurrent.Callable;
+import java.util.function.Function;
+import java.util.function.LongFunction;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.DoubleStream;
 import java.util.stream.Stream;
 
 import project.lib.crypto.algorithm.*;
+import project.lib.scaffolding.collections.SegmentBuffer;
+import project.lib.scaffolding.collections.SegmentBufferStrategy;
 import project.lib.scaffolding.collections.SequenceFunnel;
 import project.lib.scaffolding.streaming.StreamBuffer;
 import project.scaffolding.debug.BinaryDebug;
+import project.scaffolding.debug.IndentedAppendable;
 import project.test.scaffolding.TestCollector;
 import project.test.scaffolding.TestExecutor;
 import project.test.scaffolding.TestExecutorOptions;
 
 public class App {
     public static void main(String[] args) throws Exception {
-        final var tests = TestCollector.collect("project.test.unitTests");
-        TestExecutor.execute(TestExecutorOptions.verbose(), tests);
+        // final var tests = TestCollector.collect("project.test.unitTests");
+        // TestExecutor.execute(TestExecutorOptions.standard(), tests);
 
-        final var method = App.class.getDeclaredMethod("sample");
+        // final var method = App.class.getDeclaredMethod("sample");
+        final var file = new File("src\\project\\test\\artifacts\\graph.svg");
+        file.createNewFile();
+        final var defaultOut = System.out;
+        final var stream = new PrintStream(file);
+        System.setOut(stream);
+        final var random = new Random();
+        final var num = BigInteger.valueOf(167);
+        System.err.println(sample(num).toString());
 
-        statistic(() -> benchmark(App::sample), 1024);
+        statistic(() -> benchmark(() -> sample(num)), 1 << 14);
+
+        stream.close();
+
+        System.setOut(defaultOut);
     }
 
     static void statistic(LongSupplier benchmark, int count) {
-        var deltaAverage = 0.0;
-        var prev = benchmark.getAsLong();
-        for (var n = 0; true; ++n) {
-            final var result = benchmark.getAsLong();
-            final var c = 1.0 * n / (n + 1);
-            final var delta = Math.abs(result - prev);
-            prev = result;
-            deltaAverage = deltaAverage * c + (delta / (n + 1.0));
-            if ((n & (n - 1)) == 0) {
-
-                System.out.print(n);
-                System.out.print(" ");
-                System.out.print((deltaAverage));
-                System.out.print(" ");
-                System.out.println(result);
-            }
-            if (deltaAverage < 0.001) {
-                break;
-            }
+        final var statistic = new ProgressiveStatistic(3, count);
+        for (var i = 1; i < count; ++i) {
+            final var measure = benchmark.getAsLong();
+            statistic.add(measure);
         }
-
-        var results = new long[count];
-        var sum = 0;
-        for (var i = 0; i < count; ++i) {
-            final var result = benchmark.getAsLong();
-            results[i] = result;
-            sum += result;
+        statistic.clear();
+        for (var i = 1; i < count; ++i) {
+            final var measure = benchmark.getAsLong();
+            statistic.add(measure);
         }
-
-        System.out.println(1.0 * sum / count);
+        final var graph = statistic.printGraph();
+        final var builder = IndentedAppendable.create(System.out, "  ");
+        graph.encode(builder);
+        System.err.println(statistic.sampleCount());
+        System.err.println(statistic.mean());
+        System.out.flush();
     }
 
     static <T> long benchmark(Callable<T> function) {
@@ -87,25 +98,24 @@ public class App {
         }
     }
 
-    static Set<Entry<BigInteger, Integer>> sample() {
-        var rnd = new BigInteger(5, new Random());
-        if (rnd.equals(BigInteger.ZERO)) {
+    static Set<Entry<BigInteger, Integer>> sample(BigInteger num) {
+        if (num.equals(BigInteger.ZERO)) {
             return Collections.emptySet();
         }
 
         final var hash = new HashMap<BigInteger, Integer>();
 
-        final var lsb = rnd.getLowestSetBit();
+        final var lsb = num.getLowestSetBit();
         if (lsb > 0) {
             hash.put(BigInteger.TWO, lsb);
-            rnd = rnd.shiftRight(lsb);
+            num = num.shiftRight(lsb);
         }
         var div = BigInteger.valueOf(3);
 
-        while (!rnd.equals(BigInteger.ONE)) {
+        while (!num.equals(BigInteger.ONE)) {
             var exp = 0;
-            while (rnd.remainder(div).equals(BigInteger.ZERO)) {
-                rnd = rnd.divide(div);
+            while (num.remainder(div).equals(BigInteger.ZERO)) {
+                num = num.divide(div);
                 exp++;
             }
             if (exp > 0) {

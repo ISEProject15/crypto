@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<style>
+    * {
+        box-sizing: border-box;
+        overflow: hidden;
+    }
+</style>
+<html>
+
+<body>
+    <img id="image" src="./graph.svg" draggable="false">
+</body>
+
+
+<script>
+    const image = document.getElementById("image");
+    image.style.position = "absolute";
+    let scale = 1;
+    let mouseX;
+    let mouseY;
+    let dragging = false;
+    let positionX = 0;
+    let positionY = 0;
+
+    const update = () => {
+        image.style.left = `${positionX}px`;
+        image.style.top = `${positionY}px`;
+        image.style.height = image.style.width = `${scale * 100}%`;
+    }
+
+    update();
+
+
+    window.addEventListener('mousedown', (e) => {
+        console.log("down");
+        mouseX = e.clientX;
+        mouseY = e.clientY;
+        dragging = true;
+        update();
+    });
+    window.addEventListener('mouseup', (e) => {
+        mouseX = e.clientX;
+        mouseY = e.clientY;
+        dragging = false;
+        update();
+    });
+
+    window.addEventListener('mousemove', (e) => {
+        mouseX = e.clientX;
+        mouseY = e.clientY;
+        if (dragging) {
+            positionX += e.movementX;
+            positionY += e.movementY;
+        }
+        update();
+    });
+
+    window.addEventListener('wheel', (e) => {
+        const delta = e.deltaY;
+        const dx = (positionX - mouseX);
+        const dy = (positionY - mouseY);
+        const k = 1 + Math.sign(delta) * 0.1;
+        positionX = dx * k + mouseX;
+        positionY = dy * k + mouseY;
+
+        scale *= k;
+        update();
+    });
+
+
+</script>
+
+</html>

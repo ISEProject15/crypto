@@ -87,6 +87,14 @@ public class IndentedAppendable implements Appendable {
         return this;
     }
 
+    public IndentedAppendable printf(String format, Object... args) {
+        return this.print(String.format(format, args));
+    }
+
+    public IndentedAppendable printlnf(String format, Object... args) {
+        return this.println(String.format(format, args));
+    }
+
     @Override
     public IndentedAppendable append(CharSequence csq) {
         try {
