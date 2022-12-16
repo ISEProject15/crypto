@@ -215,6 +215,7 @@ public class SegmentBuffer<T> extends Sequence<T> implements Closeable {
         @Override
         public void finish(int length) {
             this.throwIfNotStaged();
+            @SuppressWarnings("resource")
             final var sequence = SegmentBuffer.this;
             length = StreamUtil.lenof(length);
             final var buffer = this.stagedBuffer;

@@ -3,6 +3,7 @@ package project.test.scaffolding;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.function.ToDoubleFunction;
+import java.util.stream.Stream;
 
 import project.scaffolding.debug.IndentedAppendable;
 
@@ -26,6 +27,14 @@ public class Graph {
 
     public double minY() {
         return this.minY;
+    }
+
+    public double maxX() {
+        return this.maxX;
+    }
+
+    public double maxY() {
+        return this.maxY;
     }
 
     public double width() {

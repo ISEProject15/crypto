@@ -8,7 +8,7 @@ import project.test.scaffolding.TestAnnotation;
 
 @TestAnnotation
 public class RSATest {
-    @TestAnnotation(enabled = false)
+    @TestAnnotation(enabled = true)
     void modulo_bitlength_should_equal_to_2k_or_2k_minus_1() {
         for (var k = 2; k < 1024; ++k) {
             final var random = new Random();

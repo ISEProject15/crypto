@@ -31,45 +31,61 @@ import project.lib.scaffolding.collections.SequenceFunnel;
 import project.lib.scaffolding.streaming.StreamBuffer;
 import project.scaffolding.debug.BinaryDebug;
 import project.scaffolding.debug.IndentedAppendable;
-import project.test.scaffolding.ProgressiveStatistic;
+import project.test.scaffolding.Graph;
+import project.test.scaffolding.Statistic;
+import project.test.scaffolding.StatisticSummary;
 import project.test.scaffolding.TestCollector;
 import project.test.scaffolding.TestExecutor;
 import project.test.scaffolding.TestExecutorOptions;
 
 public class App {
     public static void main(String[] args) throws Exception {
-        // final var tests = TestCollector.collect("project.test.unitTests");
-        // TestExecutor.execute(TestExecutorOptions.standard(), tests);
-
-        // final var method = App.class.getDeclaredMethod("sample");
         final var file = new File("src\\project\\test\\artifacts\\graph.svg");
         file.createNewFile();
         final var stream = new FileWriter(file, false);
         final var random = new Random();
         final var num = BigInteger.valueOf(167);
-        System.err.println(sample(num).toString());
+        System.out.println(sample(num).toString());
 
-        final var statistic = statistic(() -> benchmark(() -> null), 1 << 14);
-        final var graph = statistic.printGraph();
+        final var summary = statistic(() -> benchmark(() -> sample(num)), 1 << 15, 1 << 14);
+        final var graph = new Graph();
+        graph.addPath("black", "1px", summary.measures(), x -> x);
+        graph.addPath("blue", "1px", new double[] { graph.minX(), summary.mean(), graph.maxX(), summary.mean() });
+        graph.addPath("red", "1px", new double[] {
+                graph.minX(), summary.mean() + summary.standardDeviation(),
+                graph.maxX(), summary.mean() + summary.standardDeviation() });
+        graph.addPath("red", "1px", new double[] {
+                graph.minX(), summary.mean() - summary.standardDeviation(),
+                graph.maxX(), summary.mean() - summary.standardDeviation() });
         final var builder = IndentedAppendable.create(stream, "  ");
         graph.encode(builder);
-        System.out.println(statistic.sampleCount());
-        System.out.println(statistic.mean());
+        System.out.println(summary.sampleCount());
+        System.out.print(summary.mean());
+        System.out.print("±");
+        System.out.println(summary.standardDeviation());
         stream.close();
     }
 
-    static ProgressiveStatistic statistic(LongSupplier benchmark, int count) {
-        final var statistic = new ProgressiveStatistic(3, count);
+    static StatisticSummary statistic(LongSupplier benchmark, int warmup, int count) {
+        final var measures = new double[count];
+        var warmupTotal = 0L;
+        // warm up
+        for (var i = 0; i < warmup; ++i) {
+            final var measure = benchmark.getAsLong();
+            warmupTotal += measure;
+        }
+        System.out.println("warmup total: " + warmupTotal);
+
+        var measureTotal = 0L;
         for (var i = 0; i < count; ++i) {
             final var measure = benchmark.getAsLong();
-            statistic.add(measure);
+            measures[i] = measure;
+            measureTotal += measure;
         }
-        statistic.clear();
-        for (var i = 0; i < count; ++i) {
-            final var measure = benchmark.getAsLong();
-            statistic.add(measure);
-        }
-        return statistic;
+        System.out.println("measure total: " + measureTotal);
+
+        final var statistic = new Statistic(3);
+        return statistic.analyze(measures);
     }
 
     static <T> long benchmark(Callable<T> function) {
