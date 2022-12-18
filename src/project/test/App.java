@@ -33,6 +33,8 @@ import project.lib.scaffolding.streaming.StreamBuffer;
 import project.scaffolding.IntMath;
 import project.scaffolding.debug.BinaryDebug;
 import project.scaffolding.debug.IndentedAppendable;
+import project.test.attacks.CommonModulusAttack;
+import project.test.attacks.CommonModulusAttackMaliciousUser;
 import project.test.attacks.FactorizeAttack;
 import project.test.scaffolding.DoubleRandomAccess;
 import project.test.scaffolding.drawing.Graph;
@@ -44,8 +46,7 @@ import project.test.scaffolding.testing.TestExecutorOptions;
 
 public class App {
     public static void main(String[] args) throws Exception {
-        System.out.println(Arrays.toString(IntMath.extendedEuclidean(BigInteger.valueOf(6), BigInteger.valueOf(4))));
+        CommonModulusAttackMaliciousUser.demo();
 
-        FactorizeAttack.demo();
     }
 }
