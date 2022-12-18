@@ -1,4 +1,4 @@
-package project.test.scaffolding;
+package project.test.scaffolding.testing;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintWriter;

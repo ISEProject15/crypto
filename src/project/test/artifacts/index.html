@@ -3,18 +3,46 @@
     * {
         box-sizing: border-box;
         overflow: hidden;
+        margin: 0;
+        padding: 0;
+    }
+
+    html,
+    body {
+        width: 100%;
+        height: 100%;
     }
 </style>
 <html>
 
-<body>
-    <img id="image" src="./graph.svg" draggable="false">
+<body style='display: grid; 
+            grid-template: "input" auto
+                           "main" 1fr /
+                            1fr;'>
+    <input id="input" type="file" accept="image/svg+xml" style="grid-area: input;" />
+
+    <div style="position: relative; overflow: hidden; grid-area: main;">
+        <img id="image" draggable="false" />
+    </div>
 </body>
 
 
 <script>
+    const input = document.getElementById('input');
+    input.addEventListener('input', (e) => {
+        console.log('file');
+        const [file] = e.target.files;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            document.getElementById('image').setAttribute('src', e.target.result);
+        };
+        reader.readAsDataURL(file);
+    });
+
+    const container = document.getElementById('container');
     const image = document.getElementById("image");
     image.style.position = "absolute";
+
     let scale = 1;
     let mouseX;
     let mouseY;

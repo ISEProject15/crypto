@@ -4,7 +4,7 @@ import java.math.BigInteger;
 import java.util.Random;
 
 import project.lib.crypto.algorithm.RSA;
-import project.test.scaffolding.TestAnnotation;
+import project.test.scaffolding.testing.TestAnnotation;
 
 @TestAnnotation
 public class RSATest {

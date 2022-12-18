@@ -1,9 +1,8 @@
-package project.test.scaffolding;
+package project.test.scaffolding.drawing;
 
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.function.ToDoubleFunction;
-import java.util.stream.Stream;
 
 import project.scaffolding.debug.IndentedAppendable;
 
@@ -16,10 +15,12 @@ public class Graph {
         this.minY = Double.POSITIVE_INFINITY;
         this.maxX = Double.NEGATIVE_INFINITY;
         this.maxY = Double.NEGATIVE_INFINITY;
+        this.margin = 10;
     }
 
     private final ArrayList<Path> pathes;
     private double minX, minY, maxX, maxY;
+    private double margin;
 
     public double minX() {
         return this.minX;
@@ -106,16 +107,20 @@ public class Graph {
         this.addPath(null, stroke, width, false, path, getterX, getterY);
     }
 
+    public Iterable<Path> paths() {
+        return this.pathes;
+    }
+
     public void encode(IndentedAppendable builder) {
         final var size = Math.min(this.width(), this.height());
-        final var cx = size / this.width();
-        final var cy = size / this.height();
+        final var cx = size / (this.width() + 2 * margin);
+        final var cy = size / (this.height() + 2 * margin);
 
         builder.print("<svg viewBox=\"")
-                .printf(numberFormat, this.minX * cx).print(" ")
-                .printf(numberFormat, this.minY * cy).print(" ")
-                .printf(numberFormat, size).print(" ")
-                .printf(numberFormat, size)
+                .printf(numberFormat, this.minX * cx - margin).print(" ")
+                .printf(numberFormat, this.minY * cy - margin).print(" ")
+                .printf(numberFormat, size + margin).print(" ")
+                .printf(numberFormat, size + margin)
                 .print("\" ");
 
         builder.print("preserveAspectRatio=\"none\" ");

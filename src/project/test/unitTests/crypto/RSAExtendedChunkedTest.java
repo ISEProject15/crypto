@@ -9,7 +9,7 @@ import project.lib.scaffolding.collections.SequenceFunnel;
 import project.lib.scaffolding.streaming.BlockBufferWriterListenerProxy;
 import project.lib.scaffolding.streaming.SequenceStreamReader;
 import project.scaffolding.debug.BinaryDebug;
-import project.test.scaffolding.TestAnnotation;
+import project.test.scaffolding.testing.TestAnnotation;
 
 @TestAnnotation
 public class RSAExtendedChunkedTest {

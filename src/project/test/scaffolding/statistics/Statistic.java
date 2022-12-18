@@ -1,4 +1,6 @@
-package project.test.scaffolding;
+package project.test.scaffolding.statistics;
+
+import project.test.scaffolding.DoubleRandomAccess;
 
 public class Statistic {
     public Statistic(double outlierThreshold) {
@@ -7,9 +9,10 @@ public class Statistic {
 
     private final double outlierThreshold;
 
-    public StatisticSummary analyze(double[] measures) {
-        var outliers = new boolean[measures.length];
-        var sampleCount = measures.length;
+    public <T> StatisticSummary analyze(DoubleRandomAccess measures) {
+        final var length = measures.length();
+        var outliers = new boolean[length];
+        var sampleCount = length;
         var mean = Double.NaN;
         var variance = Double.NaN;
         while (sampleCount > 0) {
@@ -19,11 +22,11 @@ public class Statistic {
             final var dividedMean = mean / sqrtSampleCount;
             var outlierCandidate = -1;
             var maxDeltaVariance = Double.NEGATIVE_INFINITY;
-            for (var i = 0; i < measures.length; ++i) {
+            for (var i = 0; i < length; ++i) {
                 if (outliers[i]) {
                     continue;
                 }
-                final var measure = measures[i];
+                final var measure = measures.get(i);
                 final var deltaVariance = Math.pow(measure / sqrtSampleCount - dividedMean, 2);
                 if (deltaVariance > maxDeltaVariance) {
                     outlierCandidate = i;
@@ -32,7 +35,7 @@ public class Statistic {
                 variance += deltaVariance;
             }
             final var unbiasedSd = Math.sqrt(variance * (sampleCount / (sampleCount - 1.0)));
-            final var isOutlier = checkOutlier(measures[outlierCandidate], unbiasedSd, mean);
+            final var isOutlier = checkOutlier(measures.get(outlierCandidate), unbiasedSd, mean);
             if (!isOutlier) {
                 break;
             }
@@ -43,13 +46,14 @@ public class Statistic {
         return new StatisticSummary(measures, outliers, variance, mean, sampleCount);
     }
 
-    private static double calculateMean(double[] measures, boolean[] outliers, int sampleCount) {
+    private static <T> double calculateMean(DoubleRandomAccess measures, boolean[] outliers, int sampleCount) {
+        final var length = measures.length();
         var mean = 0.0;
-        for (var i = 0; i < measures.length; ++i) {
+        for (var i = 0; i < length; ++i) {
             if (outliers[i]) {
                 continue;
             }
-            final var measure = measures[i];
+            final var measure = measures.get(i);
             mean += measure / sampleCount;
         }
         return mean;

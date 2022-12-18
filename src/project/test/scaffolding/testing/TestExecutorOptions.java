@@ -1,4 +1,4 @@
-package project.test.scaffolding;
+package project.test.scaffolding.testing;
 
 import project.scaffolding.debug.AnsiColor;
 

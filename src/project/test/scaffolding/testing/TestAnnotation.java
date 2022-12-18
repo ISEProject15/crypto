@@ -1,4 +1,4 @@
-package project.test.scaffolding;
+package project.test.scaffolding.testing;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

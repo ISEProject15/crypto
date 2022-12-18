@@ -6,7 +6,7 @@ import project.lib.crypto.algorithm.RSA;
 import project.lib.crypto.algorithm.RSAPlainChunked;
 import project.lib.scaffolding.streaming.SequenceStreamReader;
 import project.scaffolding.debug.BinaryDebug;
-import project.test.scaffolding.TestAnnotation;
+import project.test.scaffolding.testing.TestAnnotation;
 
 @TestAnnotation
 class RSAPlainChunkedTest {

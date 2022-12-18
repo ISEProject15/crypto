@@ -1,4 +1,4 @@
-package project.test.scaffolding;
+package project.test.scaffolding.testing;
 
 public abstract class TestAgent {
     protected TestAgent(String domain) {

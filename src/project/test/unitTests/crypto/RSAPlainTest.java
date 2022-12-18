@@ -6,7 +6,7 @@ import project.lib.crypto.algorithm.RSA;
 import project.lib.crypto.algorithm.RSAPlain;
 import project.lib.scaffolding.streaming.SequenceStreamReader;
 import project.scaffolding.debug.BinaryDebug;
-import project.test.scaffolding.TestAnnotation;
+import project.test.scaffolding.testing.TestAnnotation;
 
 @TestAnnotation
 public class RSAPlainTest {

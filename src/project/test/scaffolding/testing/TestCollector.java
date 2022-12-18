@@ -1,4 +1,4 @@
-package project.test.scaffolding;
+package project.test.scaffolding.testing;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
@@ -11,6 +11,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import project.scaffolding.debug.AnsiColor;
+import project.test.scaffolding.ReflectionUtil;
 
 public class TestCollector {
     public static TestSuite collect(String packageName) {
