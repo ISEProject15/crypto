@@ -1,7 +1,7 @@
 package project.test.scaffolding.drawing;
 
 public class GraphPath {
-    GraphPath(String fill, String stroke, String width, boolean closed, double[] coords) {
+    public GraphPath(String fill, String stroke, String width, boolean closed, double[] coords) {
         if ((coords.length & 1) != 0) {
             throw new IllegalArgumentException();
         }
@@ -29,10 +29,22 @@ public class GraphPath {
         this.maxY = maxY;
     }
 
-    final String fill;
-    final String stroke;
-    final String width;
-    final boolean closed;
-    final double[] coordinates;
-    final double minX, minY, maxX, maxY;
+    private final double[] coordinates;
+    public final String fill;
+    public final String stroke;
+    public final String width;
+    public final boolean closed;
+    public final double minX, minY, maxX, maxY;
+
+    public double coordinateX(int index) {
+        return coordinates[2 * index + 0];
+    }
+
+    public double coordinateY(int index) {
+        return coordinates[2 * index + 1];
+    }
+
+    public int coordinatesCount() {
+        return this.coordinates.length / 2;
+    }
 }

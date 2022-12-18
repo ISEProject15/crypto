@@ -15,6 +15,7 @@ import project.scaffolding.debug.IndentedAppendable;
 import project.test.scaffolding.DoubleRandomAccess;
 import project.test.scaffolding.benchmark.BenchmarkServer;
 import project.test.scaffolding.benchmark.BenchmarkSummary;
+import project.test.scaffolding.drawing.Graph2SvgEncoder;
 import project.test.scaffolding.statistics.Statistic;
 
 public class FactorizeAttack {
@@ -59,7 +60,8 @@ public class FactorizeAttack {
         file.createNewFile();
         final var stream = new FileWriter(file, false);
         final var builder = IndentedAppendable.create(stream, "  ");
-        graph.encode(builder);
+        final var encoder = new Graph2SvgEncoder(1000, 1000);
+        encoder.encode(graph, builder);
         stream.flush();
 
     }
