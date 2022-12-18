@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+<style>
+    html,
+    body {
+        width: 100%;
+        height: 100%;
+        padding: 0;
+        margin: 0;
+    }
+
+    body {
+        display: grid;
+        grid-template:
+            "input input" auto
+            "main summary" 1fr / auto 1fr;
+    }
+
+    #summary {
+        overflow-y: scroll;
+        grid-area: "summary";
+        display: grid;
+        grid-template:
+            "header header" auto
+            "mods percents" 1fr / 1fr 1fr;
+    }
+</style>
+
+<body>
+    <div style="grid-area: input;">
+        <label for="input">num</label>
+        <input id="input" type="number" />
+    </div>
+    <div style="grid-area: main; overflow-y: scroll;">
+        <table>
+            <thead>
+                <tr>
+                    <th>k</th>
+                    <th>k^2 mod num</th>
+                </tr>
+            </thead>
+            <tbody id="container">
+            </tbody>
+        </table>
+    </div>
+    <div id="summary">
+        <div id="summary_header" style="grid-area: header;">
+
+        </div>
+        <div id="summary_mods" style="grid-area: mods;">
+
+        </div>
+
+        <div id="summary_percents" style="grid-area: percents;">
+
+        </div>
+    </div>
+</body>
+
+<script>
+    const input = document.getElementById("input");
+    const container = document.getElementById("container");
+    const summary_header = document.getElementById("summary_header");
+    const summary_mods = document.getElementById("summary_mods");
+    const summary_percents = document.getElementById("summary_percents");
+
+    input.addEventListener('input', (e) => {
+        const num = new Number(input.value);
+        container.innerHTML = "";
+        const set = new Set();
+
+        for (let i = 0; i < num; ++i) {
+            const mod = (i * i) % num;
+            set.add(mod);
+            const row = createRow(i, mod);
+            container.append(row);
+        }
+        summary_header.innerHTML = `<div>${set.size} / ${num} | ${set.size / num * 100}%</div>`;
+        summary_mods.innerHTML = "";
+        for (const item of Array.from(set).sort((l, r) => l - r)) {
+            summary_mods.append(...parse(`<div>${item}</div>`));
+        }
+
+        summary_percents.innerHTML = "";
+        let min = 1;
+        let minRate = Number.MAX_VALUE;
+        for (let i = 1; i <= num; ++i) {
+            const rate = (mods(i).size / i) * 100;
+            if (rate < minRate) {
+                min = i;
+                minRate = rate;
+            }
+            summary_percents.append(...parse(`<div>${i} = ${rate}%</div>`));
+        }
+
+        summary_header.append(...parse(`<div>min ${min} | ${minRate}%</div>`));
+    });
+
+    function parse(str) {
+        const c = document.createElement("div");
+        c.innerHTML = str;
+        const children = c.children;
+        c.remove();
+        return children;
+    }
+
+    function createRow(k, v) {
+        const row = document.createElement("tr");
+        const th = document.createElement("th");
+        const td = document.createElement("td");
+        th.innerHTML = `${k}`;
+        td.innerHTML = `${v}`;
+        row.append(th, td);
+        return row;
+    }
+
+    function mods(num) {
+        const set = new Set();
+        for (let i = 0; i < num; ++i) {
+            const mod = (i * i) % num;
+            set.add(mod);
+        }
+        return set;
+    }
+</script>
+
+</html>
