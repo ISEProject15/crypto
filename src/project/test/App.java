@@ -36,6 +36,7 @@ import project.scaffolding.debug.IndentedAppendable;
 import project.test.attacks.CommonModulusAttack;
 import project.test.attacks.CommonModulusAttackMaliciousUser;
 import project.test.attacks.FactorizeAttack;
+import project.test.attacks.FermatFractorizeAttack;
 import project.test.scaffolding.DoubleRandomAccess;
 import project.test.scaffolding.drawing.Graph;
 import project.test.scaffolding.statistics.Statistic;
@@ -46,7 +47,7 @@ import project.test.scaffolding.testing.TestExecutorOptions;
 
 public class App {
     public static void main(String[] args) throws Exception {
-        CommonModulusAttackMaliciousUser.demo();
+        FermatFractorizeAttack.demo();
 
     }
 }
