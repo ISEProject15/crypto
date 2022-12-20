@@ -11,12 +11,8 @@ import java.util.Set;
 import java.util.Map.Entry;
 
 import project.lib.crypto.algorithm.RSA;
-import project.scaffolding.debug.IndentedAppendable;
-import project.test.scaffolding.DoubleRandomAccess;
 import project.test.scaffolding.benchmark.BenchmarkServer;
 import project.test.scaffolding.benchmark.BenchmarkSummary;
-import project.test.scaffolding.drawing.Graph2SvgEncoder;
-import project.test.scaffolding.statistics.Statistic;
 
 public class FactorizeAttack {
     public static void demo() throws Exception {
