@@ -25,6 +25,10 @@ public class FactorizeAttack {
         final var kMax = 22;
         final var perKsamplings = new ArrayList<BenchmarkSummary[]>(kMax);
 
+        final var file = new File("src\\project\\test\\artifacts\\factorize_attack.csv");
+        file.createNewFile();
+        final var stream = new FileWriter(file, false);
+
         for (var k = 3; k < kMax; ++k) {
             final var samplings = new BenchmarkSummary[sampleCount];
             for (var i = 0; i < sampleCount; ++i) {
@@ -33,6 +37,12 @@ public class FactorizeAttack {
                 final var facts = factorize(keyBundle.modulo);
                 final var summary = BenchmarkServer.terminate();
                 samplings[i] = summary;
+
+                stream.write(String.valueOf(k));
+                stream.write(",");
+                stream.write(String.valueOf(summary.totalProgramCount()));
+                stream.write("\r\n");
+
                 System.out.print(keyBundle.modulo);
                 System.out.print(" ");
                 System.out.print(summary.totalProgramCount());
@@ -42,28 +52,8 @@ public class FactorizeAttack {
             perKsamplings.add(samplings);
         }
 
-        final var statistic = new Statistic(3);
-
-        final var summary = statistic.analyze(DoubleRandomAccess.from(perKsamplings, s -> s.size(), (s, i) -> {
-            final var samplings = s.get(i);
-            final var sum = statistic
-                    .analyze(DoubleRandomAccess.from(samplings, t -> t.length, (t, idx) -> t[idx].totalProgramCount()));
-            return sum.mean();
-        }));
-
-        for (final var measure : summary.measures()) {
-            System.out.println(measure);
-        }
-
-        final var graph = summary.print();
-        final var file = new File("src\\project\\test\\artifacts\\factorize_attack.svg");
-        file.createNewFile();
-        final var stream = new FileWriter(file, false);
-        final var builder = IndentedAppendable.create(stream, "  ");
-        final var encoder = new Graph2SvgEncoder(1000, 1000);
-        encoder.encode(graph, builder);
         stream.flush();
-
+        stream.close();
     }
 
     static Set<Entry<BigInteger, Integer>> factorize(BigInteger num) {

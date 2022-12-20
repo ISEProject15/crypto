@@ -47,7 +47,8 @@ import project.test.scaffolding.testing.TestExecutorOptions;
 
 public class App {
     public static void main(String[] args) throws Exception {
-        FermatFractorizeAttack.demo();
+        FactorizeAttack.demo();
+        // FermatFractorizeAttack.demo();
 
     }
 }
