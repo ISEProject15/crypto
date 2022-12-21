@@ -35,4 +35,30 @@ public final class IntMath {
             result[2] = u.subtract(m.divide(n).multiply(v));
         }
     }
+
+    public static BigInteger chineseReminder(BigInteger[] modremPairs) {
+        if (modremPairs.length % 2 != 0) {
+            throw new IllegalArgumentException();
+        }
+        final var n = modremPairs.length / 2;
+        var m = BigInteger.ONE;
+
+        for (var i = 0; i < n; ++i) {
+            final var mod = modremPairs[i * 2];
+            m = m.multiply(mod);
+        }
+
+        var x = BigInteger.ZERO;
+
+        for (var i = 0; i < n; ++i) {
+            final var mod = modremPairs[i * 2 + 0];
+            final var rem = modremPairs[i * 2 + 1];
+            final var others = m.divide(mod);
+            final var duv = extendedEuclidean(others, mod);
+            final var delta = others.multiply(duv[1]).multiply(rem);
+            x = x.add(delta);
+        }
+
+        return x;
+    }
 }

@@ -50,7 +50,7 @@ public final class RSA {
         return RSAKeyBundle.of(modulo, secret, exponent);
     }
 
-    private static int bitPlainBlockLength(BigInteger modulo) {
+    public static int bitPlainBlockLength(BigInteger modulo) {
         // (1 << (modulo + 1)) - 1 does not satisfy restriction
         // block length less than modulo
         final var one = BigInteger.ONE;

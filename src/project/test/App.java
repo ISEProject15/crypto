@@ -8,6 +8,6 @@ public class App {
         // FermatFractorizeAttack.demo();
         // CommonModulusAttack.demo();
         // CommonModulusAttackMaliciousUser.demo();
-
+        HastadBroadcastAttack.demo();
     }
 }
