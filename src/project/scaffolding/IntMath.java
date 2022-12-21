@@ -1,7 +1,6 @@
 package project.scaffolding;
 
 import java.math.BigInteger;
-import java.util.Arrays;
 
 import project.test.scaffolding.benchmark.BenchmarkServer;
 
