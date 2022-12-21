@@ -13,8 +13,8 @@ public class HastadBroadcastAttack {
         // よって4の倍数とならない数ならeとして利用できる．
 
         final var random = new Random();
-        final var exponent = BigInteger.valueOf(3);
-        final var k = 32;
+        final var exponent = BigInteger.valueOf(17);
+        final var k = 16;
         final var keyPairs = new RSAKeyBundle[exponent.intValue()];
         var plainLength = Integer.MAX_VALUE;
         for (var i = 0; i < keyPairs.length; ++i) {
@@ -30,26 +30,32 @@ public class HastadBroadcastAttack {
                 }
             }
 
+            System.out.println("keypair[" + i + "]: " + pair);
             keyPairs[i] = pair;
-            plainLength = Math.min(plainLength, RSA.plainBlockLength(pair.modulo));
+            plainLength = Math.min(plainLength, RSA.bitPlainBlockLength(pair.modulo));
         }
 
         final var plain = new BigInteger(plainLength, random);
-
         final var modremPairs = new BigInteger[keyPairs.length * 2];
-
+        System.out.println("exponent: " + exponent);
+        System.out.println("plain: " + plain);
         for (var i = 0; i < keyPairs.length; ++i) {
             final var pair = keyPairs[i];
+            final var code = plain.modPow(exponent, pair.modulo);
             modremPairs[2 * i + 0] = pair.modulo;
-            modremPairs[2 * i + 1] = plain.modPow(exponent, pair.modulo);
+            modremPairs[2 * i + 1] = code;
+            System.out.println("code[" + i + "]: " + code);
         }
 
         final var x = IntMath.chineseReminder(modremPairs);
+        System.out.println("plain^e: " + x);
+
         final var xRootE = Math.pow(x.doubleValue(), 1.0 / exponent.doubleValue());
         final var decoded = Math.round(xRootE);
-        System.out.println("plain:    " + plain);
-        System.out.println("exponent: " + exponent);
-        System.out.println("decoded:  " + decoded);
+
+        System.out.println("decoded: " + decoded);
+
+        System.out.println("decoded == plain: " + (decoded == plain.longValue()));
     }
 
     static RSAKeyBundle generateKeyBundle(int k, BigInteger exponent, Random random) {

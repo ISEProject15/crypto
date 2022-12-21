@@ -1,6 +1,7 @@
 package project.scaffolding;
 
 import java.math.BigInteger;
+import java.util.Arrays;
 
 import project.test.scaffolding.benchmark.BenchmarkServer;
 
@@ -56,9 +57,8 @@ public final class IntMath {
             final var others = m.divide(mod);
             final var duv = extendedEuclidean(others, mod);
             final var delta = others.multiply(duv[1]).multiply(rem);
-            x = x.add(delta);
+            x = x.add(delta).mod(m);
         }
-
         return x;
     }
 }
