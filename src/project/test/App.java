@@ -9,7 +9,7 @@ public class App {
         // CommonModulusAttack.demo();
         // CommonModulusAttackMaliciousUser.demo();
         // HastadBroadcastAttack.demo();
-        ReplayAttack.demo();
-    
+        // ReplayAttack.demo();
+        CyclingAttack.demo();
     }
 }
