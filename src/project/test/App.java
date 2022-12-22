@@ -10,6 +10,7 @@ public class App {
         // CommonModulusAttackMaliciousUser.demo();
         // HastadBroadcastAttack.demo();
         // ReplayAttack.demo();
-        CyclingAttack.demo();
+        // CyclingAttack.demo();
+        WienersAttack.demo();
     }
 }

@@ -7,6 +7,7 @@ import java.util.Arrays;
 import java.util.Random;
 
 import project.lib.crypto.algorithm.RSA;
+import project.scaffolding.IntMath;
 import project.test.scaffolding.benchmark.BenchmarkServer;
 import project.test.scaffolding.benchmark.BenchmarkSummary;
 
@@ -49,9 +50,6 @@ public class FermatFractorizeAttack {
         summaryStream.close();
     }
 
-    private static final int[] mod32Table = new int[] { 0, 1, 4, 9, 16, 17, 25 };
-    private static final BigInteger i31 = BigInteger.valueOf(31);
-
     private static BigInteger[] fermat(BigInteger modulo) {
         BenchmarkServer.enter();
         final var fourModulo = modulo.multiply(BigInteger.valueOf(4));
@@ -60,7 +58,7 @@ public class FermatFractorizeAttack {
         BigInteger p_plus_q = null;
         while (true) {
             final var num = fourModulo.add(p_minus_q.multiply(p_minus_q));
-            p_plus_q = trySqrt(num);
+            p_plus_q = IntMath.trySqrt(num);
             BenchmarkServer.increment();
             if (p_plus_q != null) {
                 break;
@@ -75,15 +73,4 @@ public class FermatFractorizeAttack {
         return new BigInteger[] { p, q };
     }
 
-    private static BigInteger trySqrt(BigInteger num) {
-        final var modi32 = num.and(i31).intValue();
-        if (Arrays.binarySearch(mod32Table, modi32) < 0) {
-            return null;
-        }
-        final var sqrt = num.sqrt();
-        if (sqrt.multiply(sqrt).equals(num)) {
-            return sqrt;
-        }
-        return null;
-    }
 }

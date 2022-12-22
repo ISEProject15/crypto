@@ -1,6 +1,7 @@
 package project.scaffolding;
 
 import java.math.BigInteger;
+import java.util.Arrays;
 
 import project.test.scaffolding.benchmark.BenchmarkServer;
 
@@ -59,5 +60,20 @@ public final class IntMath {
             x = x.add(delta).mod(m);
         }
         return x;
+    }
+
+    private static final int[] mod32Table = new int[] { 0, 1, 4, 9, 16, 17, 25 };
+    private static final BigInteger i31 = BigInteger.valueOf(31);
+
+    public static BigInteger trySqrt(BigInteger num) {
+        final var modi32 = num.and(i31).intValue();
+        if (Arrays.binarySearch(mod32Table, modi32) < 0) {
+            return null;
+        }
+        final var sqrt = num.sqrt();
+        if (sqrt.multiply(sqrt).equals(num)) {
+            return sqrt;
+        }
+        return null;
     }
 }

@@ -9,9 +9,6 @@ import project.scaffolding.IntMath;
 
 public class HastadBroadcastAttack {
     public static void demo() {
-        // N == pqに対してphi(N) = (p - 1)(q - 1)は偶数の積であるから4の倍数．
-        // よって4の倍数とならない数ならeとして利用できる．
-
         final var random = new Random();
         final var exponent = BigInteger.valueOf(17);
         final var k = 16;
