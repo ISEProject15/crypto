@@ -1,4 +1,4 @@
-package project.scaffolding.debug;
+package project.scaffolding;
 
 import java.util.regex.Pattern;
 
@@ -148,7 +148,7 @@ public class IndentedAppendable implements Appendable {
 
         try {
             final var base = this.base;
-            for (var rest = this.indentLevel; rest >= 0; --rest) {
+            for (var rest = this.indentLevel; rest > 0; --rest) {
                 base.append(indent);
             }
         } catch (Exception e) {

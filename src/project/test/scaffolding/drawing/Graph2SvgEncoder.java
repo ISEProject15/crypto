@@ -1,6 +1,6 @@
 package project.test.scaffolding.drawing;
 
-import project.scaffolding.debug.IndentedAppendable;
+import project.scaffolding.IndentedAppendable;
 
 public class Graph2SvgEncoder {
     public Graph2SvgEncoder(double width, double height) {

@@ -5,20 +5,22 @@ import java.util.ArrayList;
 import java.util.Iterator;
 
 import project.scaffolding.BigFrac;
+import project.scaffolding.IndentedAppendable;
 import project.scaffolding.IntMath;
-import project.scaffolding.debug.IndentedAppendable;
 
 public class WienersAttack {
     public static void demo() {
         final var writer = IndentedAppendable.create(System.out, "  ");
-
         final var modulo = BigInteger.valueOf(8927);
         final var exponent = BigInteger.valueOf(2621);
+        writer.println("modulo: " + modulo);
+        writer.println("exponent: " + exponent);
+
         final var f = BigFrac.of(exponent, modulo);
+
         // iterate guess of k/d
         final var iter = new ContinuedFractionApproximationIterator(f);
         final var fracE = BigFrac.of(exponent);
-
         while (iter.hasNext()) {
             writer.indentLevel(0);
             writer.println("guessing:").indent();

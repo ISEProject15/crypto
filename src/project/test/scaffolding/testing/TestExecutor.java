@@ -3,8 +3,9 @@ package project.test.scaffolding.testing;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintWriter;
 import java.util.stream.Collectors;
+
+import project.scaffolding.IndentedAppendable;
 import project.scaffolding.debug.AnsiColor;
-import project.scaffolding.debug.IndentedAppendable;
 
 public final class TestExecutor {
     private static final String succeededText = "✓";
