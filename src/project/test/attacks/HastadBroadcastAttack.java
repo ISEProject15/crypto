@@ -10,7 +10,7 @@ import project.scaffolding.IntMath;
 public class HastadBroadcastAttack {
     public static void demo() {
         final var random = new Random();
-        final var exponent = BigInteger.valueOf(17);
+        final var exponent = BigInteger.valueOf(5);
         final var k = 16;
         final var keyPairs = new RSAKeyBundle[exponent.intValue()];
         var plainLength = Integer.MAX_VALUE;
@@ -45,7 +45,7 @@ public class HastadBroadcastAttack {
         }
 
         final var x = IntMath.chineseReminder(modremPairs);
-        System.out.println("plain^e: " + x);
+        System.out.println("plain**e: " + x);
 
         final var xRootE = Math.pow(x.doubleValue(), 1.0 / exponent.doubleValue());
         final var decoded = Math.round(xRootE);

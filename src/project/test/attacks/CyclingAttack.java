@@ -7,9 +7,11 @@ import java.util.Random;
 import java.util.function.Function;
 
 import project.lib.crypto.algorithm.*;
+import project.scaffolding.IndentedAppendable;
 
 public class CyclingAttack {
     public static void demo() throws Exception {
+        final var writer = IndentedAppendable.create(System.out, "  ");
         final var sampleCount = 1024;
         final var kMax = 10;
         final var random = new Random();
@@ -25,19 +27,22 @@ public class CyclingAttack {
                 final var plain = new BigInteger(plainLength, random);
                 final var encrypter = encrypter(keybundle.exponent, keybundle.modulo);
                 final var code = encrypter.apply(plain);
-                System.out.println("keypair: " + keybundle);
-                System.out.println("plain: " + plain);
-                System.out.println("code: " + code);
+                writer.indentLevel(0);
+                writer.println("keypair: " + keybundle).indent();
+                writer.println("plain: " + plain);
+                writer.println("code: " + code);
 
                 final var cycle = calcCycle(code, encrypter);
 
-                System.out.println("cycle: " + cycle);
+                writer.println("cycle: " + cycle);
                 final var decoded = nthApply(cycle - 1, code, encrypter);
 
-                System.out.println("decoded: " + decoded);
-                System.out.println("decoded == plain: " + (plain.equals(decoded)));
+                writer.println("decoded: " + decoded);
+                writer.println("decoded == plain: " + (plain.equals(decoded)));
 
                 summaryStream.write(String.valueOf(k));
+                summaryStream.write(",");
+                summaryStream.write(keybundle.modulo.toString());
                 summaryStream.write(",");
                 summaryStream.write(String.valueOf(cycle));
                 summaryStream.write("\r\n");

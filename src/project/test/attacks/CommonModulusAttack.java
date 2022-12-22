@@ -75,8 +75,8 @@ public class CommonModulusAttack {
             final var secret = key1.exponent.modInverse(estimatedPhi);
 
             final var decoded = code1.modPow(secret, modulo);
-            System.out.println(decoded);
-            System.out.println(decoded.equals(plain));
+            System.out.println("decoded: " + decoded);
+            System.out.println("decoded == plain: " + decoded.equals(plain));
             return;// success
         }
         final var invCode1 = duv[1];

@@ -11,6 +11,6 @@ public class App {
         // HastadBroadcastAttack.demo();
         // ReplayAttack.demo();
         // CyclingAttack.demo();
-        WienersAttack.demo();
+        // WienersAttack.demo();
     }
 }
